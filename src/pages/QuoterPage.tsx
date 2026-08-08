@@ -49,7 +49,19 @@ export const QuoterPage: React.FC = () => {
           <p className="page-subtitle">Calcula precios basados en costos reales y margen objetivo</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => setTab('form')} className={tab === 'form' ? 'btn-primary' : 'btn-ghost'} style={{ fontSize: '0.8rem' }}>
+          <button onClick={() => {
+            setTab('form');
+            setCustomerName('');
+            setRecipeId('');
+            setQuantity(1);
+            setComplexity('simple');
+            setLaborBase(150);
+            setDepreciation(30);
+            setOverheadPercent(15);
+            setMarginPercent(55);
+            setAdvancePercent(50);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }} className={tab === 'form' ? 'btn-primary' : 'btn-ghost'} style={{ fontSize: '0.8rem' }}>
             <Calculator size={15} /> Nueva Cotización
           </button>
           <button onClick={() => setTab('history')} className={tab === 'history' ? 'btn-primary' : 'btn-ghost'} style={{ fontSize: '0.8rem' }}>

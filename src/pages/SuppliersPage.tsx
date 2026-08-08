@@ -1,17 +1,85 @@
 import React, { useState } from 'react';
-import { Plus, Phone, Mail, TrendingDown, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Phone, Mail, TrendingDown, Trash2, Edit2, X, Save } from 'lucide-react';
 import { mockSuppliers, mockIngredients } from '../lib/mockData';
 import type { Supplier, Ingredient } from '../types';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/ToastContext';
 import { AlertDialog } from '../components/ui/AlertDialog';
 
+type SupplierForm = {
+  name: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+  category: string;
+  notes: string;
+};
+
+const EMPTY_FORM: SupplierForm = {
+  name: '', contact_name: '', phone: '', email: '', category: 'General', notes: '',
+};
+
+const SUPPLIER_CATEGORIES = ['Harinas y Azúcares', 'Chocolates', 'Lácteos', 'Frutas', 'Decoración', 'Empaques', 'General'];
+
 export const SuppliersPage: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [selectedIngredientId, setSelectedIngredientId] = useState<string>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState<SupplierForm>(EMPTY_FORM);
   const { toast } = useToast();
+
+  const openCreate = () => {
+    setForm(EMPTY_FORM);
+    setEditingId(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (supplier: Supplier) => {
+    setForm({
+      name: supplier.name,
+      contact_name: supplier.contact_name ?? '',
+      phone: supplier.phone ?? '',
+      email: supplier.email ?? '',
+      category: supplier.category ?? 'General',
+      notes: supplier.notes ?? '',
+    });
+    setEditingId(supplier.id);
+    setModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { toast.error('El nombre del proveedor es obligatorio'); return; }
+    setIsSaving(true);
+    try {
+      if (editingId) {
+        const { error } = await supabase.from('suppliers').update(form).eq('id', editingId);
+        if (error) throw error;
+        setSuppliers(prev => prev.map(s => s.id === editingId ? { ...s, ...form } : s));
+        toast.success('Proveedor actualizado correctamente');
+      } else {
+        const { data, error } = await supabase.from('suppliers').insert({ ...form, created_at: new Date().toISOString() }).select().single();
+        if (error) throw error;
+        const created = data ?? { id: crypto.randomUUID(), ...form, created_at: new Date().toISOString() };
+        setSuppliers(prev => [...prev, created as Supplier]);
+        toast.success('Proveedor creado correctamente');
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (editingId) {
+        setSuppliers(prev => prev.map(s => s.id === editingId ? { ...s, ...form } : s));
+      } else {
+        setSuppliers(prev => [...prev, { id: crypto.randomUUID(), ...form, created_at: new Date().toISOString() } as Supplier]);
+      }
+      toast.info('Guardado localmente (modo mock)');
+    } finally {
+      setIsSaving(false);
+      setModalOpen(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -30,7 +98,10 @@ export const SuppliersPage: React.FC = () => {
       setDeleteId(null);
     }
   };
-  
+
+  const setF = (field: keyof SupplierForm, value: string) =>
+    setForm(prev => ({ ...prev, [field]: value }));
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -38,7 +109,7 @@ export const SuppliersPage: React.FC = () => {
           <h1 className="page-title text-2xl font-bold font-poppins text-gray-900">Proveedores</h1>
           <p className="page-subtitle text-gray-500">Directorio de proveedores y comparador de precios</p>
         </div>
-        <button className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors shadow-sm">
+        <button onClick={openCreate} className="btn-primary flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors shadow-sm">
           <Plus className="w-4 h-4" />
           <span>Nuevo Proveedor</span>
         </button>
@@ -50,17 +121,17 @@ export const SuppliersPage: React.FC = () => {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="font-bold text-lg text-gray-900">{supplier.name}</h3>
-                <p className="text-sm text-gray-500">{supplier.contact}</p>
+                <p className="text-sm text-gray-500">{supplier.contact_name}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="badge bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium">
                   {supplier.category}
                 </span>
-                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => toast.info('Función de edición en desarrollo')}><Edit2 size={13} /></button>
-                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(supplier.id)}><Trash2 size={13} /></button>
+                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => openEdit(supplier)} title="Editar proveedor"><Edit2 size={13} /></button>
+                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(supplier.id)} title="Eliminar proveedor"><Trash2 size={13} /></button>
               </div>
             </div>
-            
+
             <div className="space-y-2 mb-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Phone className="w-4 h-4 text-gray-400" />
@@ -94,7 +165,7 @@ export const SuppliersPage: React.FC = () => {
           </h2>
           <div className="max-w-md">
             <label className="block text-sm font-medium text-gray-700 mb-1">Selecciona un insumo para comparar</label>
-            <select 
+            <select
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               value={selectedIngredientId}
               onChange={(e) => setSelectedIngredientId(e.target.value)}
@@ -120,7 +191,6 @@ export const SuppliersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {/* Mock data generation for comparator based on selected ingredient */}
                 {[
                   { supp: 'Proveedor A', pack: '1 kg', cost: 120, unitCost: 0.12, best: false },
                   { supp: 'Proveedor B', pack: '5 kg', cost: 500, unitCost: 0.10, best: true },
@@ -134,16 +204,12 @@ export const SuppliersPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-gray-900">${item.unitCost.toFixed(2)}</span>
                         {item.best && (
-                          <span className="badge bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">
-                            Mejor Precio
-                          </span>
+                          <span className="badge bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-semibold">Mejor Precio</span>
                         )}
                       </div>
                     </td>
                     <td className="p-4">
-                      <button className="text-sm px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                        Usar este precio
-                      </button>
+                      <button className="text-sm px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">Usar este precio</button>
                     </td>
                   </tr>
                 ))}
@@ -156,6 +222,58 @@ export const SuppliersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* CREATE / EDIT MODAL */}
+      {modalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '1.25rem', boxShadow: '0 25px 50px rgba(0,0,0,0.2)', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #F4F3FF' }}>
+              <h2 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '1.1rem', color: '#2D3436' }}>
+                {editingId ? 'Editar Proveedor' : 'Nuevo Proveedor'}
+              </h2>
+              <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#636E72' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Nombre del Proveedor *</label>
+                <input className="input-marea" value={form.name} onChange={e => setF('name', e.target.value)} placeholder="Ej: Insumos La Merced" />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                <div>
+                  <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Contacto</label>
+                  <input className="input-marea" value={form.contact_name} onChange={e => setF('contact_name', e.target.value)} placeholder="Nombre del contacto" />
+                </div>
+                <div>
+                  <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Categoría</label>
+                  <select className="input-marea" value={form.category} onChange={e => setF('category', e.target.value)}>
+                    {SUPPLIER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Teléfono</label>
+                  <input className="input-marea" value={form.phone} onChange={e => setF('phone', e.target.value)} placeholder="5551234567" />
+                </div>
+                <div>
+                  <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Correo</label>
+                  <input type="email" className="input-marea" value={form.email} onChange={e => setF('email', e.target.value)} placeholder="proveedor@email.com" />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Notas</label>
+                <textarea className="input-marea" rows={3} value={form.notes} onChange={e => setF('notes', e.target.value)} placeholder="Días de entrega, pedido mínimo..." style={{ resize: 'vertical' }} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', padding: '1.25rem 1.5rem', background: '#F8F9FA', borderTop: '1px solid #F4F3FF', borderRadius: '0 0 1.25rem 1.25rem' }}>
+              <button onClick={() => setModalOpen(false)} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}>Cancelar</button>
+              <button onClick={handleSave} disabled={isSaving} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
+                {isSaving ? 'Guardando...' : <><Save size={15} /> {editingId ? 'Guardar Cambios' : 'Crear Proveedor'}</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AlertDialog
         isOpen={!!deleteId}

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Download, Filter, FileText } from 'lucide-react';
+import { Download, Filter, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { mockOrders } from '../../lib/mockData';
 import type { Order, OrderStatus } from '../../types';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/ToastContext';
+import { AlertDialog } from '../../components/ui/AlertDialog';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pendiente', production: 'En Producción', ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado',
@@ -16,12 +19,15 @@ function getPaymentStatus(order: Order) {
 }
 
 export const BitacoraPage: React.FC = () => {
-  const [orders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
   const PER_PAGE = 10;
 
   const filtered = orders.filter(o => {
@@ -43,6 +49,34 @@ export const BitacoraPage: React.FC = () => {
 
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
+
+  const handleUpdateStatus = async (id: string, status: OrderStatus) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    try {
+      const { error } = await supabase.from('orders').update({ status }).eq('id', id);
+      if (error) throw error;
+      toast.success('Estado actualizado');
+    } catch {
+      toast.info('Actualizado localmente (modo mock)');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', deleteId);
+      if (error) throw error;
+      setOrders(prev => prev.filter(o => o.id !== deleteId));
+      toast.success('Pedido eliminado correctamente');
+    } catch {
+      setOrders(prev => prev.filter(o => o.id !== deleteId));
+      toast.info('Eliminado localmente (modo mock)');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
+  };
 
   const exportCSV = () => {
     const headers = ['Folio', 'Fecha', 'Cliente', 'Canal', 'Total', 'Anticipo', 'Saldo', 'Estado'];
@@ -112,7 +146,7 @@ export const BitacoraPage: React.FC = () => {
           <thead>
             <tr>
               <th>Folio</th><th>Fecha</th><th>Cliente</th><th>Canal</th><th>Items</th>
-              <th>Total</th><th>Anticipo</th><th>Saldo</th><th>Pago</th><th>Estado</th>
+              <th>Total</th><th>Anticipo</th><th>Saldo</th><th>Pago</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -129,7 +163,25 @@ export const BitacoraPage: React.FC = () => {
                   <td style={{ color: '#28A745' }}>${order.advance_paid.toLocaleString('es-MX')}</td>
                   <td style={{ color: order.balance_due > 0 ? '#E74C3C' : '#28A745' }}>${order.balance_due.toLocaleString('es-MX')}</td>
                   <td><span className={payment.style}>{payment.label}</span></td>
-                  <td><span className={`status-pill status-${order.status}`}>{STATUS_LABELS[order.status]}</span></td>
+                  <td>
+                    <select
+                      className="input-marea"
+                      style={{ width: 'auto', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }}
+                      value={order.status}
+                      onChange={e => handleUpdateStatus(order.id, e.target.value as OrderStatus)}
+                    >
+                      {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => setDeleteId(order.id)}
+                      style={{ padding: '0.3rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }}
+                      title="Eliminar pedido"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
                 </tr>
               );
             })}
@@ -153,6 +205,15 @@ export const BitacoraPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar pedido"
+        description="¿Estás seguro de eliminar este pedido de la bitácora? Esta acción no se puede deshacer."
+      />
     </div>
   );
 };

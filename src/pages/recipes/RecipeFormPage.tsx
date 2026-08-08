@@ -40,7 +40,18 @@ export const RecipeFormPage: React.FC = () => {
     setName(recipe.name || '');
     setDescription(recipe.description || '');
     setSteps(recipe.steps ? recipe.steps.join('\n') : '');
-    // populate other fields as needed
+    if (recipe.prep_minutes) setPrepMinutes(recipe.prep_minutes.toString());
+    if (recipe.yield_portions) setYieldPortions(recipe.yield_portions.toString());
+    
+    if (recipe.items && recipe.items.length > 0) {
+      setIngredients(recipe.items.map((item: any) => ({
+        name: item.ingredient_name || '',
+        quantity: item.quantity?.toString() || '',
+        unit: item.unit || '',
+        package_cost: '',
+        package_quantity: '1'
+      })));
+    }
   };
 
   return (

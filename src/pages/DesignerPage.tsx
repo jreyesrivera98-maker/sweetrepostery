@@ -72,6 +72,13 @@ export const DesignerPage: React.FC = () => {
                 </button>
               ))}
             </div>
+            <input
+              type="text"
+              className="w-full mt-2 p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              placeholder="O escribe un estilo personalizado..."
+              value={!styles.includes(style) ? style : ''}
+              onChange={e => setStyle(e.target.value)}
+            />
           </div>
 
           <div>
@@ -89,6 +96,13 @@ export const DesignerPage: React.FC = () => {
                 </button>
               ))}
             </div>
+            <input
+              type="text"
+              className="w-full mt-2 p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+              placeholder="O escribe una ocasión personalizada..."
+              value={!occasions.includes(occasion) ? occasion : ''}
+              onChange={e => setOccasion(e.target.value)}
+            />
           </div>
 
           <div className="pt-2 border-t border-gray-100">
