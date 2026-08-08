@@ -1,34 +1,69 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Eye, EyeOff, Save, Image as ImageIcon, Store, Users, ShoppingBag } from 'lucide-react';
+import { GripVertical, Eye, EyeOff, Save, Image as ImageIcon, Store, Users, LayoutDashboard, BookOpen, Calculator, Wand2, ClipboardList, Package, Truck, BarChart3, Settings as SettingsIcon } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/ToastContext';
 
-const INITIAL_NAV_ITEMS = [
-  { id: 'nav-1', label: 'Dashboard', icon: Store, visible: true },
-  { id: 'nav-2', label: 'Inventario', icon: ShoppingBag, visible: true },
-  { id: 'nav-3', label: 'Proveedores', icon: Users, visible: true },
-  { id: 'nav-4', label: 'Diseñador IA', icon: ImageIcon, visible: false },
-];
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  LayoutDashboard, BookOpen, Calculator, Wand2, ClipboardList, Users,
+  Package, Truck, Store, BarChart3, Settings: SettingsIcon,
+};
 
 export const ConfigPage: React.FC = () => {
-  const [brandName, setBrandName] = useState('Marea Dulce');
-  const [primaryColor, setPrimaryColor] = useState('#6C5CE7');
-  const [secondaryColor, setSecondaryColor] = useState('#D6BBFB');
-  const [logoUrl] = useState('');
-  const [navItems, setNavItems] = useState(INITIAL_NAV_ITEMS);
+  const { settings, updateSettings, reorderSidebar, toggleSidebarItem } = useAppStore();
+  const [brandName, setBrandName] = useState(settings.brand_name);
+  const [primaryColor, setPrimaryColor] = useState(settings.primary_color);
+  const [secondaryColor, setSecondaryColor] = useState(settings.secondary_color);
+  const [logoUrl] = useState(settings.logo_url || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
-    const items = Array.from(navItems);
+    const items = Array.from(settings.sidebar_navigation_order);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
-    setNavItems(items);
+    
+    reorderSidebar(items);
+    
+    try {
+      const { error } = await supabase.from('app_settings').update({ sidebar_navigation_order: items }).eq('id', settings.id);
+      if (error) throw error;
+      toast.success('Orden guardado correctamente');
+    } catch (e: any) {
+      console.error(e);
+      toast.info('Actualizado localmente (modo mock)');
+    }
   };
 
-  const toggleVisibility = (id: string) => {
-    setNavItems(navItems.map(item => 
+  const handleToggleVisibility = async (id: string) => {
+    toggleSidebarItem(id);
+    const updatedItems = settings.sidebar_navigation_order.map(item => 
       item.id === id ? { ...item, visible: !item.visible } : item
-    ));
+    );
+    try {
+      await supabase.from('app_settings').update({ sidebar_navigation_order: updatedItems }).eq('id', settings.id);
+    } catch (e: any) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveBrand = async () => {
+    setIsSaving(true);
+    const partial = { brand_name: brandName, primary_color: primaryColor, secondary_color: secondaryColor };
+    updateSettings(partial);
+    try {
+      const { error } = await supabase.from('app_settings').update(partial).eq('id', settings.id);
+      if (error) throw error;
+      toast.success('Configuración de marca guardada');
+    } catch (e: any) {
+      console.error(e);
+      toast.info('Actualizado localmente (modo mock)');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -99,9 +134,13 @@ export const ConfigPage: React.FC = () => {
               </div>
             </div>
 
-            <button className="w-full btn-primary bg-primary text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors">
+            <button 
+              onClick={handleSaveBrand}
+              disabled={isSaving}
+              className="w-full btn-primary bg-primary text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors"
+            >
               <Save className="w-4 h-4" />
-              Guardar Cambios
+              {isSaving ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
         </div>
@@ -119,8 +158,8 @@ export const ConfigPage: React.FC = () => {
             <Droppable droppableId="sidebar-items">
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                  {navItems.map((item, index) => {
-                    const Icon = item.icon;
+                  {settings.sidebar_navigation_order.map((item, index) => {
+                    const Icon = ICON_MAP[item.icon] || Store;
                     return (
                       <Draggable key={item.id} draggableId={item.id} index={index}>
                         {(provided, snapshot) => (
@@ -141,7 +180,7 @@ export const ConfigPage: React.FC = () => {
                               </div>
                             </div>
                             <button
-                              onClick={() => toggleVisibility(item.id)}
+                              onClick={() => handleToggleVisibility(item.id)}
                               className={`p-2 rounded-lg transition-colors ${item.visible ? 'text-primary bg-primary/10 hover:bg-primary/20' : 'text-gray-400 bg-gray-100 hover:bg-gray-200'}`}
                             >
                               {item.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -156,11 +195,6 @@ export const ConfigPage: React.FC = () => {
               )}
             </Droppable>
           </DragDropContext>
-
-          <button className="w-full mt-6 btn-primary bg-gray-900 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-black transition-colors">
-            <Save className="w-4 h-4" />
-            Guardar Orden
-          </button>
         </div>
       </div>
     </div>

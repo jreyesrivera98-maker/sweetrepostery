@@ -2,19 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppSettings, SidebarItem } from '../types';
 
-const defaultSidebar: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', path: '/', icon: 'LayoutDashboard', visible: true, roles: ['admin', 'baker', 'seller'] },
-  { id: 'recipes', label: 'Recetario', path: '/recetas', icon: 'BookOpen', visible: true, roles: ['admin', 'baker'] },
-  { id: 'quoter', label: 'Cotizador', path: '/cotizador', icon: 'Calculator', visible: true, roles: ['admin', 'seller'] },
-  { id: 'designer', label: 'Diseñador IA', path: '/disenador', icon: 'Wand2', visible: true, roles: ['admin', 'seller'] },
-  { id: 'orders', label: 'Pedidos', path: '/pedidos', icon: 'ClipboardList', visible: true, roles: ['admin', 'baker', 'seller'] },
-  { id: 'customers', label: 'Clientes', path: '/clientes', icon: 'Users', visible: true, roles: ['admin', 'seller'] },
-  { id: 'inventory', label: 'Inventario', path: '/inventario', icon: 'Package', visible: true, roles: ['admin', 'baker'] },
-  { id: 'suppliers', label: 'Proveedores', path: '/proveedores', icon: 'Truck', visible: true, roles: ['admin'] },
-  { id: 'catalog', label: 'Catálogo', path: '/catalogo', icon: 'Store', visible: true, roles: ['admin', 'seller'] },
-  { id: 'reports', label: 'Reportes', path: '/reportes', icon: 'BarChart3', visible: true, roles: ['admin'] },
-  { id: 'config', label: 'Configuración', path: '/configuracion', icon: 'Settings', visible: true, roles: ['admin'] },
-];
+import { DEFAULT_SIDEBAR_ITEMS } from '../types';
 
 interface AppState {
   settings: AppSettings;
@@ -36,7 +24,7 @@ export const useAppStore = create<AppState>()(
         logo_url: null,
         primary_color: '#6C5CE7',
         secondary_color: '#D6BBFB',
-        sidebar_navigation_order: defaultSidebar,
+        sidebar_navigation_order: DEFAULT_SIDEBAR_ITEMS,
         updated_at: new Date().toISOString(),
       },
       sidebarCollapsed: false,

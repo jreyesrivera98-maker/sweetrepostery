@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, MonitorPlay, Edit, DollarSign } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, MonitorPlay, Edit, DollarSign, Trash2 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/ToastContext';
+import { AlertDialog } from '../../components/ui/AlertDialog';
 import { mockRecipes } from '../../lib/mockData';
 import { useRBAC } from '../../hooks/useRBAC';
 import { MermaZeroPanel } from '../../components/recipes/MermaZeroPanel';
@@ -11,6 +14,10 @@ export const RecipeDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [showKDS, setShowKDS] = useState(false);
   const { isBaker, isAdmin } = useRBAC();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const recipe = mockRecipes.find(r => r.id === id) || mockRecipes[0]; // Fallback to first
   const isBakerOnly = isBaker && !isAdmin;
@@ -23,6 +30,23 @@ export const RecipeDetailPage: React.FC = () => {
   // Mock ingredients cost logic for demonstration
   const totalCost = recipe.sale_price ? recipe.sale_price * 0.4 : 10;
   const suggestedPrice = totalCost * 2.5;
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
+      if (error) throw error;
+      toast.success('Receta eliminada correctamente');
+      navigate('/recetas');
+    } catch (err: any) {
+      console.error(err);
+      toast.info('Eliminada localmente (modo mock)');
+      navigate('/recetas');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
+  };
 
   return (
     <div className="recipe-detail-page">
@@ -49,6 +73,15 @@ export const RecipeDetailPage: React.FC = () => {
               <Edit size={18} className="mr-2" />
               Editar
             </Link>
+          )}
+          {!isBakerOnly && (
+            <button 
+              onClick={() => setDeleteId(recipe.id)}
+              className="btn-primary px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center border border-red-200"
+            >
+              <Trash2 size={18} className="mr-2" />
+              Eliminar
+            </button>
           )}
         </div>
       </div>
@@ -179,8 +212,15 @@ export const RecipeDetailPage: React.FC = () => {
       </div>
 
       {showKDS && <KDSMode recipe={recipe as any} onClose={() => setShowKDS(false)} />}
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar receta"
+        description="¿Estás seguro de eliminar esta receta? Se perderán todos sus datos permanentemente."
+      />
     </div>
   );
 };
-
-

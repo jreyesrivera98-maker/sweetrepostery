@@ -216,3 +216,18 @@ export interface KPIData {
   revenueChange: number;
   ordersChange: number;
 }
+
+export const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
+  { id: 'nav-dashboard', label: 'Dashboard', path: '/', icon: 'LayoutDashboard', visible: true, roles: ['admin', 'baker', 'seller'] },
+  { id: 'nav-recipes', label: 'Recetario', path: '/recetas', icon: 'BookOpen', visible: true, roles: ['admin', 'baker', 'seller'] },
+  { id: 'nav-quoter', label: 'Cotizador', path: '/cotizador', icon: 'Calculator', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-designer', label: 'Diseñador', path: '/disenador', icon: 'Wand2', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-orders', label: 'Pedidos', path: '/pedidos', icon: 'ClipboardList', visible: true, roles: ['admin', 'baker', 'seller'] },
+  { id: 'nav-bitacora', label: 'Bitácora', path: '/pedidos/bitacora', icon: 'ClipboardList', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-customers', label: 'Clientes', path: '/clientes', icon: 'Users', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-inventory', label: 'Inventario', path: '/inventario', icon: 'Package', visible: true, roles: ['admin', 'baker'] },
+  { id: 'nav-suppliers', label: 'Proveedores', path: '/proveedores', icon: 'Truck', visible: true, roles: ['admin', 'baker'] },
+  { id: 'nav-reports', label: 'Reportes', path: '/reportes', icon: 'BarChart3', visible: true, roles: ['admin'] },
+  { id: 'nav-catalog', label: 'Catálogo Público', path: '/catalogo', icon: 'Store', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-settings', label: 'Configuración', path: '/configuracion', icon: 'Settings', visible: true, roles: ['admin'] },
+];

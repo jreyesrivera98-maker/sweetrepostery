@@ -1,10 +1,35 @@
 import React, { useState } from 'react';
-import { Plus, Phone, Mail, TrendingDown } from 'lucide-react';
+import { Plus, Phone, Mail, TrendingDown, Trash2, Edit2 } from 'lucide-react';
 import { mockSuppliers, mockIngredients } from '../lib/mockData';
 import type { Supplier, Ingredient } from '../types';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/ToastContext';
+import { AlertDialog } from '../components/ui/AlertDialog';
 
 export const SuppliersPage: React.FC = () => {
+  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
   const [selectedIngredientId, setSelectedIngredientId] = useState<string>('');
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('suppliers').delete().eq('id', deleteId);
+      if (error) throw error;
+      setSuppliers(prev => prev.filter(s => s.id !== deleteId));
+      toast.success('Proveedor eliminado correctamente');
+    } catch (err: any) {
+      console.error(err);
+      setSuppliers(prev => prev.filter(s => s.id !== deleteId));
+      toast.info('Eliminado localmente (modo mock)');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
+  };
   
   return (
     <div className="space-y-8">
@@ -20,16 +45,20 @@ export const SuppliersPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {mockSuppliers?.map((supplier: Supplier) => (
+        {suppliers?.map((supplier: Supplier) => (
           <div key={supplier.id} className="glass-card bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="font-bold text-lg text-gray-900">{supplier.name}</h3>
                 <p className="text-sm text-gray-500">{supplier.contact}</p>
               </div>
-              <span className="badge bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium">
-                {supplier.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="badge bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-medium">
+                  {supplier.category}
+                </span>
+                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => toast.info('Función de edición en desarrollo')}><Edit2 size={13} /></button>
+                <button style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(supplier.id)}><Trash2 size={13} /></button>
+              </div>
             </div>
             
             <div className="space-y-2 mb-4">
@@ -127,6 +156,15 @@ export const SuppliersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar proveedor"
+        description="¿Estás seguro de eliminar este proveedor? Se perderán sus datos de contacto y catálogo de precios."
+      />
     </div>
   );
 };

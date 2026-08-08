@@ -3,11 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, AlertCircle, Package } from 'lucide-react';
 import { mockIngredients } from '../lib/mockData';
 import type { Ingredient } from '../types';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/ToastContext';
+import { AlertDialog } from '../components/ui/AlertDialog';
 
 export const InventoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [ingredients, setIngredients] = useState<Ingredient[]>(mockIngredients);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const filter = searchParams.get('filter');
 
@@ -26,7 +32,8 @@ export const InventoryPage: React.FC = () => {
   const lowStockCount = ingredients.filter(ing => ing.stock < ing.min_stock && ing.stock > 0).length;
   const outOfStockCount = ingredients.filter(ing => ing.stock === 0).length;
 
-  const handleUpdateIngredient = (id: string, field: string, value: number) => {
+  const handleUpdateIngredient = async (id: string, field: string, value: number) => {
+    // Optimistic update
     setIngredients(prev => prev.map(ing => {
       if (ing.id === id) {
         const updated = { ...ing, [field]: value };
@@ -37,6 +44,35 @@ export const InventoryPage: React.FC = () => {
       }
       return ing;
     }));
+
+    try {
+      const { error } = await supabase.from('ingredients').update({ [field]: value }).eq('id', id);
+      if (error) throw error;
+      toast.success('Insumo actualizado correctamente');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Error al actualizar en base de datos. Modo local activo.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('ingredients').delete().eq('id', deleteId);
+      if (error) throw error;
+      
+      setIngredients(prev => prev.filter(ing => ing.id !== deleteId));
+      toast.success('Registro eliminado correctamente');
+    } catch (err: any) {
+      console.error(err);
+      // Fallback for mock mode
+      setIngredients(prev => prev.filter(ing => ing.id !== deleteId));
+      toast.info('Eliminado localmente (modo mock)');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -162,8 +198,8 @@ export const InventoryPage: React.FC = () => {
                 </td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }}><Edit2 size={13} /></button>
-                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }}><Trash2 size={13} /></button>
+                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => toast.info('Función de edición detallada en desarrollo')}><Edit2 size={13} /></button>
+                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(ing.id)}><Trash2 size={13} /></button>
                   </div>
                 </td>
               </tr>
@@ -178,6 +214,15 @@ export const InventoryPage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar insumo"
+        description="¿Estás seguro de eliminar este insumo? Esta acción no se puede deshacer y afectará el cálculo de recetas que lo utilicen."
+      />
     </div>
   );
 };

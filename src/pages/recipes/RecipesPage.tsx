@@ -2,16 +2,42 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Plus, Wand2, Sparkles, AlertCircle } from 'lucide-react';
 import { mockRecipes } from '../../lib/mockData';
+import { supabase } from '../../lib/supabase';
+import { useToast } from '../../components/ui/ToastContext';
+import { AlertDialog } from '../../components/ui/AlertDialog';
 
 export const RecipesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  const filteredRecipes = mockRecipes.filter((recipe) => {
+  const [recipes, setRecipes] = useState(mockRecipes);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
+
+  const filteredRecipes = recipes.filter((recipe) => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter ? recipe.category === categoryFilter : true;
     return matchesSearch && matchesCategory;
   });
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('recipes').delete().eq('id', deleteId);
+      if (error) throw error;
+      setRecipes(prev => prev.filter(r => r.id !== deleteId));
+      toast.success('Receta eliminada correctamente');
+    } catch (err: any) {
+      console.error(err);
+      setRecipes(prev => prev.filter(r => r.id !== deleteId));
+      toast.info('Eliminada localmente (modo mock)');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
+  };
 
   return (
     <div className="recipes-page">
@@ -62,7 +88,7 @@ export const RecipesPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRecipes.map((recipe) => (
             <div key={recipe.id} className="recipe-card glass-card bg-[#FDFDFD] rounded-2xl overflow-hidden border border-[#E8E3FF] shadow-sm hover:shadow-md transition-shadow relative">
-              <Link to={`/recetas/${recipe.id}`}>
+              <Link to={`/recetas/${recipe.id}`} className="block">
                 <div className="h-48 bg-gradient-to-br from-[#D6BBFB] to-[#6C5CE7] relative">
                   {/* Placeholder for image */}
                   {recipe.ai_generated && (
@@ -70,6 +96,12 @@ export const RecipesPage: React.FC = () => {
                       <Sparkles size={12} className="mr-1" /> IA
                     </div>
                   )}
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteId(recipe.id); }}
+                    className="absolute top-2 left-2 p-1.5 bg-white text-red-500 rounded-full shadow hover:bg-red-50 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                  </button>
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
@@ -109,6 +141,15 @@ export const RecipesPage: React.FC = () => {
           <p className="text-[#636E72] font-inter">Intenta con otros términos de búsqueda o filtros.</p>
         </div>
       )}
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar receta"
+        description="¿Estás seguro de eliminar esta receta? Se perderán todos sus datos y escandallos."
+      />
     </div>
   );
 };

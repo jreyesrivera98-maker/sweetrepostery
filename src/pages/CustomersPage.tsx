@@ -4,11 +4,18 @@ import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { mockCustomers, mockOrders } from '../lib/mockData';
 import type { Customer } from '../types';
+import { supabase } from '../lib/supabase';
+import { useToast } from '../components/ui/ToastContext';
+import { AlertDialog } from '../components/ui/AlertDialog';
+import { Trash2, Edit } from 'lucide-react';
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Customer | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   const isUpcoming = (dateStr: string) => {
     try {
@@ -28,10 +35,43 @@ export const CustomersPage: React.FC = () => {
 
   const customerOrders = selected ? mockOrders.filter(o => o.customer_name === selected.name) : [];
 
-  const redeemPoints = (id: string, points: number) => {
-    if (points < 100) { alert('Mínimo 100 puntos para canjear.'); return; }
+  const redeemPoints = async (id: string, points: number) => {
+    if (points < 100) { toast.error('Mínimo 100 puntos para canjear.'); return; }
+    
+    // Optimistic UI update
     setCustomers(prev => prev.map(c => c.id === id ? { ...c, loyalty_points: c.loyalty_points - 100 } : c));
-    alert('✅ 100 puntos canjeados por 5% de descuento.');
+    if (selected && selected.id === id) {
+      setSelected({ ...selected, loyalty_points: selected.loyalty_points - 100 });
+    }
+
+    try {
+      const { error } = await supabase.from('customers').update({ loyalty_points: points - 100 }).eq('id', id);
+      if (error) throw error;
+      toast.success('100 puntos canjeados por 5% de descuento.');
+    } catch (err: any) {
+      console.error(err);
+      toast.info('Canjeado localmente (modo mock)');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('customers').delete().eq('id', deleteId);
+      if (error) throw error;
+      setCustomers(prev => prev.filter(c => c.id !== deleteId));
+      if (selected?.id === deleteId) setSelected(null);
+      toast.success('Cliente eliminado correctamente');
+    } catch (err: any) {
+      console.error(err);
+      setCustomers(prev => prev.filter(c => c.id !== deleteId));
+      if (selected?.id === deleteId) setSelected(null);
+      toast.info('Eliminado localmente (modo mock)');
+    } finally {
+      setIsDeleting(false);
+      setDeleteId(null);
+    }
   };
 
   return (
@@ -102,9 +142,13 @@ export const CustomersPage: React.FC = () => {
               <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg, #6C5CE7, #A29BFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '1.4rem' }}>
                 {selected.name.charAt(0)}
               </div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <h3 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, margin: 0 }}>{selected.name}</h3>
                 <span className="badge badge-primary">Cliente registrado</span>
+              </div>
+              <div style={{ display: 'flex', gap: '0.375rem' }}>
+                <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => toast.info('Función de edición en desarrollo')}><Edit size={14} /></button>
+                <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(selected.id)}><Trash2 size={14} /></button>
               </div>
             </div>
 
@@ -181,6 +225,15 @@ export const CustomersPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        title="Eliminar cliente"
+        description="¿Estás seguro de eliminar este cliente? Se perderán sus puntos de lealtad y su historial de pedidos."
+      />
     </div>
   );
 };
