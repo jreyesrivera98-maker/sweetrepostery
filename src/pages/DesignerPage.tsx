@@ -18,22 +18,36 @@ export const DesignerPage: React.FC = () => {
   const styles = ['Minimalista', 'Romántico', 'Boho', 'Elegante', 'Infantil', 'Moderno'];
   const occasions = ['Cumpleaños', 'Boda', 'Baby Shower', 'Graduación', 'Corporativo', 'San Valentín'];
 
+  const downloadImage = async (url: string, index: number) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = `marea-render-${index + 1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Fallback: open in new tab if fetch fails (e.g. CORS in prod)
+      window.open(url, '_blank');
+    }
+  };
+
   const handleGenerate = () => {
     setIsGenerating(true);
-    // Mock generating prompt
     const colors = palette.map(p => p.hex).join(', ');
-    const prompt = `A beautiful ${style} ${occasion} cake. Colors: ${colors}. ${description}. Professional photography, 4k, hyperrealistic, clean background.`;
+    const prompt = `A beautiful ${style} ${occasion} cake. Colors: ${colors}. ${description}. Professional photography, 4k, hyperrealistic, clean white background.`;
     setPromptUsed(prompt);
-
-    setTimeout(() => {
-      // Mock generated Pollinations images
-      const baseSeed = Math.floor(Math.random() * 10000);
-      const newImages = Array.from({ length: 4 }).map((_, i) => 
-        `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${baseSeed + i}&width=512&height=512&nologo=true`
-      );
-      setGeneratedImages(newImages);
-      setIsGenerating(false);
-    }, 2000);
+    const baseSeed = Math.floor(Math.random() * 99999);
+    const newImages = Array.from({ length: 4 }).map((_, i) =>
+      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${baseSeed + i * 7}&width=512&height=512&nologo=true&enhance=true`
+    );
+    setGeneratedImages(newImages);
+    // Images load asynchronously via <img> — mark done after short delay for UX
+    setTimeout(() => setIsGenerating(false), 800);
   };
 
   return (
@@ -151,12 +165,24 @@ export const DesignerPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {generatedImages.map((img, i) => (
                     <div key={i} className="group relative rounded-xl overflow-hidden aspect-square border border-gray-200 shadow-sm bg-white">
-                      <img src={img} alt={`Render ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                      <img
+                        src={img}
+                        alt={`Render ${i + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+                      />
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
-                        <button className="w-full py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors">
-                          Usar como base
+                        <button
+                          onClick={() => window.open(img, '_blank')}
+                          className="w-full py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+                        >
+                          Ver en tamaño completo
                         </button>
-                        <button className="w-full py-2 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 transition-colors backdrop-blur-sm flex justify-center items-center gap-2">
+                        <button
+                          onClick={() => downloadImage(img, i)}
+                          className="w-full py-2 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 transition-colors backdrop-blur-sm flex justify-center items-center gap-2"
+                        >
                           <Download className="w-4 h-4" />
                           Descargar PNG
                         </button>
