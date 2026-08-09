@@ -41,6 +41,10 @@ export const DesignerPage: React.FC = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    // Cleanup previous object URL to avoid memory leaks
+    if (generatedImage && generatedImage.startsWith('blob:')) {
+      URL.revokeObjectURL(generatedImage);
+    }
     setGeneratedImage(null);
     try {
       const colors = palette.map(p => p.hex).join(', ');
@@ -48,11 +52,26 @@ export const DesignerPage: React.FC = () => {
       
       setPromptUsed(prompt);
       
-      const newImage = await generateImageWithGemini(prompt);
-      setGeneratedImage(newImage);
+      const response = await fetch('https://free-image-generation-api.jreyesrivera98.workers.dev/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer saraReyna.664'
+        },
+        body: JSON.stringify({ prompt })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${errorText}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      setGeneratedImage(objectUrl);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || 'Error al generar la imagen. Verifica tu conexión o clave de API.');
+      toast.error(error.message || 'Error al generar la imagen.');
     } finally {
       setIsGenerating(false);
     }
