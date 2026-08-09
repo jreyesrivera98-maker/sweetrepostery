@@ -12,7 +12,7 @@ export const DesignerPage: React.FC = () => {
     { id: '2', hex: '#E6E6FA' },
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [promptUsed, setPromptUsed] = useState('');
 
   const styles = ['Minimalista', 'Romántico', 'Boho', 'Elegante', 'Infantil', 'Moderno'];
@@ -25,7 +25,7 @@ export const DesignerPage: React.FC = () => {
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = objectUrl;
-      a.download = `marea-render-${index + 1}.png`;
+      a.download = `marea-render-concept.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -39,13 +39,13 @@ export const DesignerPage: React.FC = () => {
   const handleGenerate = () => {
     setIsGenerating(true);
     const colors = palette.map(p => p.hex).join(', ');
-    const prompt = `A beautiful ${style} ${occasion} cake. Colors: ${colors}. ${description}. Professional photography, 4k, hyperrealistic, clean white background.`;
+    const prompt = `A high-resolution product concept presentation sheet, 3-panel split view side-by-side, presenting 3 distinct design options for a ${style} ${occasion} cake. Colors: ${colors}. Concept: ${description}. Layout & Style: Clean studio presentation sheet, uniform studio lighting, neutral background, ultra-detailed, photorealistic, 8k resolution, professional design showcase.`;
     setPromptUsed(prompt);
-    const baseSeed = Math.floor(Math.random() * 99999);
-    const newImages = Array.from({ length: 4 }).map((_, i) =>
-      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' [Variante ' + (i+1) + ']')}?seed=${baseSeed + i * 9999}&width=512&height=512&nologo=true&enhance=true`
-    );
-    setGeneratedImages(newImages);
+    const baseSeed = Math.floor(Math.random() * 9999999);
+    // Request a wide image for the 3 panels
+    const newImage = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${baseSeed}&width=1536&height=512&nologo=true&enhance=true`;
+    
+    setGeneratedImage(newImage);
     // Images load asynchronously via <img> — mark done after short delay for UX
     setTimeout(() => setIsGenerating(false), 800);
   };
@@ -136,7 +136,7 @@ export const DesignerPage: React.FC = () => {
             ) : (
               <>
                 <Wand2 className="w-5 h-5" />
-                Generar 4 Renders
+                Generar Conceptos (3 Opciones)
               </>
             )}
           </button>
@@ -147,7 +147,7 @@ export const DesignerPage: React.FC = () => {
           <div className="bg-gray-50 rounded-2xl p-6 h-full min-h-[600px] border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold font-poppins text-gray-900">Resultados</h2>
-              {generatedImages.length > 0 && (
+              {generatedImage && (
                 <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-1 rounded-full">
                   Completado
                 </span>
@@ -155,40 +155,32 @@ export const DesignerPage: React.FC = () => {
             </div>
 
             {isGenerating ? (
-              <div className="grid grid-cols-2 gap-4 flex-1">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-gray-200 rounded-xl animate-pulse aspect-square"></div>
-                ))}
-              </div>
-            ) : generatedImages.length > 0 ? (
-              <div className="space-y-4 flex-1">
-                <div className="grid grid-cols-2 gap-4">
-                  {generatedImages.map((img, i) => (
-                    <div key={i} className="group relative rounded-xl overflow-hidden aspect-square border border-gray-200 shadow-sm bg-white">
-                      <img
-                        src={img}
-                        alt={`Render ${i + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
-                        <button
-                          onClick={() => window.open(img, '_blank')}
-                          className="w-full py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
-                        >
-                          Ver en tamaño completo
-                        </button>
-                        <button
-                          onClick={() => downloadImage(img, i)}
-                          className="w-full py-2 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 transition-colors backdrop-blur-sm flex justify-center items-center gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Descargar PNG
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+              <div className="w-full flex-1 bg-gray-200 rounded-xl animate-pulse min-h-[300px]"></div>
+            ) : generatedImage ? (
+              <div className="space-y-4 flex-1 flex flex-col">
+                <div className="group relative rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-white flex-1 flex items-center justify-center min-h-[300px]">
+                  <img
+                    src={generatedImage}
+                    alt={`Render Concepto 3 Paneles`}
+                    className="w-full h-auto max-h-full object-contain"
+                    loading="lazy"
+                    onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }}
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 p-4">
+                    <button
+                      onClick={() => window.open(generatedImage, '_blank')}
+                      className="px-6 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors"
+                    >
+                      Ver en tamaño completo
+                    </button>
+                    <button
+                      onClick={() => downloadImage(generatedImage, 0)}
+                      className="px-6 py-2 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 transition-colors backdrop-blur-sm flex justify-center items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Descargar PNG
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-white p-3 rounded-lg border border-gray-200 text-xs text-gray-500">
                   <span className="font-semibold text-gray-700">Prompt:</span> {promptUsed}
