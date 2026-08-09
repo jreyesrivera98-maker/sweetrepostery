@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Eye, EyeOff, Save, Image as ImageIcon, Store, Users, LayoutDashboard, BookOpen, Calculator, Wand2, ClipboardList, Package, Truck, BarChart3, Settings as SettingsIcon } from 'lucide-react';
+import { GripVertical, Eye, EyeOff, Store, Users, LayoutDashboard, BookOpen, Calculator, Wand2, ClipboardList, Package, Truck, BarChart3, Settings as SettingsIcon } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/ToastContext';
