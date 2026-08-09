@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Wand2, Download, Image as ImageIcon } from 'lucide-react';
 import { ColorPaletteEditor } from '../components/designer/ColorPaletteEditor';
 import type { ColorSwatch } from '../components/designer/ColorPaletteEditor';
-import { generateImageWithGemini } from '../lib/gemini';
 import { useToast } from '../components/ui/ToastContext';
 
 export const DesignerPage: React.FC = () => {
