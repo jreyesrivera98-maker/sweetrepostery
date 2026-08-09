@@ -79,9 +79,11 @@ Responde SOLO con un JSON válido (sin markdown, sin bloques de código) con est
 
   const text = await callGemini(prompt);
   try {
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as GeneratedRecipe;
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON found");
+    return JSON.parse(match[0]) as GeneratedRecipe;
   } catch {
+    console.error('Error parseando JSON de Gemini (Receta):', text);
     throw new Error('La IA no devolvió un JSON válido. Intenta de nuevo.');
   }
 }
@@ -122,8 +124,9 @@ Responde SOLO con JSON válido:
 
   const text = await callGemini(prompt);
   try {
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as PriceOptimization;
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON found");
+    return JSON.parse(match[0]) as PriceOptimization;
   } catch {
     return {
       recommended_price: params.calculated_price * 1.05,
@@ -184,8 +187,9 @@ Responde SOLO con un JSON válido con esta estructura exacta:
 
   const text = await callGemini(prompt);
   try {
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as DesignerQuestion[];
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error("No JSON found");
+    return JSON.parse(match[0]) as DesignerQuestion[];
   } catch {
     console.error('Error parseando JSON de Gemini:', text);
     throw new Error('La IA no pudo generar las opciones. Intenta modificar tu idea.');
