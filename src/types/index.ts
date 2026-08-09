@@ -19,11 +19,22 @@ export interface AppSettings {
   primary_color: string;
   secondary_color: string;
   sidebar_navigation_order: SidebarItem[];
+  font_heading: string;
+  font_body: string;
   catalog_hero_title: string;
   catalog_hero_subtitle: string;
   catalog_layout: 'grid' | 'list' | 'minimal';
   catalog_show_prep: boolean;
   catalog_show_ingredients: boolean;
+  catalog_show_price: boolean;
+  catalog_show_category: boolean;
+  catalog_show_description: boolean;
+  catalog_require_phone: boolean;
+  catalog_require_date: boolean;
+  catalog_require_address: boolean;
+  catalog_advance_percent: number;
+  catalog_max_daily_orders: number;
+  catalog_whatsapp_message: string;
   updated_at: string;
 }
 

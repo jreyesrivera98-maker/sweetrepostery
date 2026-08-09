@@ -35,14 +35,42 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
 
   const cartCount = cart.reduce((acc, item) => acc + item.qty, 0);
 
+  const handleCheckout = () => {
+    // Generate text
+    let orderText = cart.map(item => {
+      const p = publishedProducts.find(x => x.id === item.id);
+      return `- ${item.qty}x ${p?.name} ($${(p?.sale_price || 0) * item.qty})`;
+    }).join('\n');
+
+    const totalStr = `$${cartTotal.toFixed(2)}`;
+    const advanceStr = `$${(cartTotal * (settings.catalog_advance_percent / 100)).toFixed(2)}`;
+
+    let message = settings.catalog_whatsapp_message || '';
+    message = message.replace('{pedido}', orderText)
+                     .replace('{total}', totalStr)
+                     .replace('{anticipo}', advanceStr);
+
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 font-inter">
+    <div 
+      className="min-h-screen bg-gray-50"
+      style={{
+        '--color-marea-primary': settings.primary_color,
+        '--color-marea-secondary': settings.secondary_color,
+        fontFamily: settings.font_body
+      } as React.CSSProperties}
+    >
       {/* Navbar */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl font-poppins">M</div>
-            <h1 className="text-2xl font-bold font-poppins text-gray-900 tracking-tight">Marea Dulce</h1>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: settings.primary_color, fontFamily: settings.font_heading }}>
+              {settings.brand_name.charAt(0)}
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: settings.font_heading }}>{settings.brand_name}</h1>
           </div>
           {!isPreviewMode && (
             <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
@@ -58,15 +86,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
       </header>
 
       {/* Hero */}
-      <div className="bg-primary text-white py-20 px-4 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold font-poppins mb-4 max-w-2xl mx-auto leading-tight">
+      <div className="text-white py-20 px-4 text-center" style={{ backgroundColor: settings.primary_color }}>
+        <h2 className="text-4xl md:text-5xl font-bold mb-4 max-w-2xl mx-auto leading-tight" style={{ fontFamily: settings.font_heading }}>
           {settings.catalog_hero_title}
         </h2>
         <p className="text-primary-100 text-lg mb-8 max-w-xl mx-auto">
           {settings.catalog_hero_subtitle}
         </p>
         {!isPreviewMode && (
-          <button onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })} className="bg-white text-primary px-8 py-3 rounded-full font-semibold hover:bg-gray-50 transition-colors shadow-lg">
+          <button onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })} className="bg-white px-8 py-3 rounded-full font-semibold hover:bg-gray-50 transition-colors shadow-lg" style={{ color: settings.primary_color }}>
             Ver Catálogo
           </button>
         )}
@@ -79,13 +107,17 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
             <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 group">
               <div className="aspect-[4/3] relative overflow-hidden bg-gray-100">
                 <img src={product.image_url || `https://image.pollinations.ai/prompt/${encodeURIComponent(product.name + ' pastel artesanal')}`} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-gray-700 shadow-sm">
-                  {product.category}
-                </span>
+                {settings.catalog_show_category && (
+                  <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-xs font-semibold text-gray-700 shadow-sm">
+                    {product.category}
+                  </span>
+                )}
               </div>
               <div className="p-5 flex flex-col h-full">
-                <h3 className="font-bold text-lg text-gray-900 mb-1 font-poppins">{product.name}</h3>
-                <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+                <h3 className="font-bold text-lg text-gray-900 mb-1" style={{ fontFamily: settings.font_heading }}>{product.name}</h3>
+                {settings.catalog_show_description && (
+                  <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+                )}
                 
                 {/* Extra info based on config */}
                 {(settings.catalog_show_prep || settings.catalog_show_ingredients) && (
@@ -108,9 +140,19 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
                 )}
 
                 <div className="flex items-center justify-between mt-auto pt-2">
-                  <span className="font-bold text-xl text-primary">${product.sale_price} <span className="text-xs text-gray-400 font-normal">MXN</span></span>
+                  {settings.catalog_show_price ? (
+                    <span className="font-bold text-xl" style={{ color: settings.primary_color }}>
+                      ${product.sale_price} <span className="text-xs text-gray-400 font-normal">MXN</span>
+                    </span>
+                  ) : (
+                    <span />
+                  )}
                   {!isPreviewMode && (
-                    <button onClick={() => addToCart(product.id)} className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                    <button 
+                      onClick={() => addToCart(product.id)} 
+                      className="w-10 h-10 rounded-full flex items-center justify-center transition-colors text-white hover:opacity-90"
+                      style={{ backgroundColor: settings.primary_color }}
+                    >
                       <Plus className="w-5 h-5" />
                     </button>
                   )}
@@ -175,7 +217,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
                   <span className="font-medium text-gray-500">Total a pagar</span>
                   <span className="font-bold text-xl text-gray-900">${cartTotal.toFixed(2)}</span>
                 </div>
-                <button className="w-full bg-primary text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30">
+                <button onClick={handleCheckout} className="w-full text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg" style={{ backgroundColor: settings.primary_color }}>
                   Completar Pedido <ArrowRight className="w-5 h-5" />
                 </button>
               </div>

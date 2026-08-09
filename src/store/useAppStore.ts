@@ -28,8 +28,19 @@ export const useAppStore = create<AppState>()(
         catalog_hero_title: 'Postres artesanales creados con pasión',
         catalog_hero_subtitle: 'Explora nuestro catálogo y agenda tu pedido. Calidad y sabor en cada mordida.',
         catalog_layout: 'grid',
+        font_heading: 'Poppins',
+        font_body: 'Inter',
         catalog_show_prep: true,
         catalog_show_ingredients: true,
+        catalog_show_price: true,
+        catalog_show_category: true,
+        catalog_show_description: true,
+        catalog_require_phone: true,
+        catalog_require_date: true,
+        catalog_require_address: false,
+        catalog_advance_percent: 50,
+        catalog_max_daily_orders: 10,
+        catalog_whatsapp_message: '¡Hola! Me gustaría hacer un pedido del catálogo:\n\n{pedido}\n\nTotal: {total}\nAnticipo requerido: {anticipo}\n\nQuedo atento(a) para coordinar el pago.',
         updated_at: new Date().toISOString(),
       },
       sidebarCollapsed: false,
@@ -59,8 +70,24 @@ export const useAppStore = create<AppState>()(
         if (!persistedState) return currentState;
         const state = { ...currentState, ...persistedState };
         if (persistedState.settings) {
-          state.settings = { ...currentState.settings, ...persistedState.settings };
+          state.settings = { 
+            ...currentState.settings, 
+            ...persistedState.settings 
+          };
           
+          // Ensure new config keys from updates exist in persisted settings
+          state.settings.font_heading = persistedState.settings.font_heading ?? currentState.settings.font_heading;
+          state.settings.font_body = persistedState.settings.font_body ?? currentState.settings.font_body;
+          state.settings.catalog_show_price = persistedState.settings.catalog_show_price ?? currentState.settings.catalog_show_price;
+          state.settings.catalog_show_category = persistedState.settings.catalog_show_category ?? currentState.settings.catalog_show_category;
+          state.settings.catalog_show_description = persistedState.settings.catalog_show_description ?? currentState.settings.catalog_show_description;
+          state.settings.catalog_require_phone = persistedState.settings.catalog_require_phone ?? currentState.settings.catalog_require_phone;
+          state.settings.catalog_require_date = persistedState.settings.catalog_require_date ?? currentState.settings.catalog_require_date;
+          state.settings.catalog_require_address = persistedState.settings.catalog_require_address ?? currentState.settings.catalog_require_address;
+          state.settings.catalog_advance_percent = persistedState.settings.catalog_advance_percent ?? currentState.settings.catalog_advance_percent;
+          state.settings.catalog_max_daily_orders = persistedState.settings.catalog_max_daily_orders ?? currentState.settings.catalog_max_daily_orders;
+          state.settings.catalog_whatsapp_message = persistedState.settings.catalog_whatsapp_message ?? currentState.settings.catalog_whatsapp_message;
+
           // Ensure new sidebar items from code updates are added to persisted state
           const existingIds = new Set(state.settings.sidebar_navigation_order.map((i: any) => i.id));
           DEFAULT_SIDEBAR_ITEMS.forEach(item => {
