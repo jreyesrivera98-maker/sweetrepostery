@@ -158,8 +158,8 @@ export async function generateImageWithGemini(prompt: string): Promise<string> {
     throw new Error('VITE_GEMINI_API_KEY no está configurada.');
   }
 
-  // Usamos el modelo Imagen 3 oficial vía el endpoint predict
-  const url = `${GEMINI_BASE}/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`;
+  // Usamos el modelo Imagen 3 oficial (versión 002) vía el endpoint predict
+  const url = `${GEMINI_BASE}/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
   
   const res = await fetch(url, {
     method: 'POST',
