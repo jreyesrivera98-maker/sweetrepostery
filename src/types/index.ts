@@ -19,6 +19,11 @@ export interface AppSettings {
   primary_color: string;
   secondary_color: string;
   sidebar_navigation_order: SidebarItem[];
+  catalog_hero_title: string;
+  catalog_hero_subtitle: string;
+  catalog_layout: 'grid' | 'list' | 'minimal';
+  catalog_show_prep: boolean;
+  catalog_show_ingredients: boolean;
   updated_at: string;
 }
 
@@ -229,5 +234,6 @@ export const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
   { id: 'nav-suppliers', label: 'Proveedores', path: '/proveedores', icon: 'Truck', visible: true, roles: ['admin', 'baker'] },
   { id: 'nav-reports', label: 'Reportes', path: '/reportes', icon: 'BarChart3', visible: true, roles: ['admin'] },
   { id: 'nav-catalog', label: 'Catálogo Público', path: '/catalogo', icon: 'Store', visible: true, roles: ['admin', 'seller'] },
+  { id: 'nav-catalog-designer', label: 'Diseño Catálogo', path: '/diseno-catalogo', icon: 'Wand2', visible: true, roles: ['admin'] },
   { id: 'nav-settings', label: 'Configuración', path: '/configuracion', icon: 'Settings', visible: true, roles: ['admin'] },
 ];

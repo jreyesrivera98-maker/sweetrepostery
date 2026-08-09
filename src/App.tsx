@@ -22,6 +22,7 @@ const SuppliersPage    = lazy(() => import('./pages/SuppliersPage').then(m => ({
 const ReportsPage      = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
 const ConfigPage       = lazy(() => import('./pages/ConfigPage').then(m => ({ default: m.ConfigPage })));
 const CatalogPage      = lazy(() => import('./pages/catalog/CatalogPage').then(m => ({ default: m.CatalogPage })));
+const CatalogDesignerPage = lazy(() => import('./pages/catalog/CatalogDesignerPage').then(m => ({ default: m.CatalogDesignerPage })));
 
 // Loader
 const PageLoader = () => (
@@ -74,6 +75,7 @@ export default function App() {
             <Route path="proveedores" element={<SuppliersPage />} />
             <Route path="reportes" element={<ReportsPage />} />
             <Route path="configuracion" element={<ConfigPage />} />
+            <Route path="diseno-catalogo" element={<CatalogDesignerPage />} />
           </Route>
 
           {/* Fallback */}

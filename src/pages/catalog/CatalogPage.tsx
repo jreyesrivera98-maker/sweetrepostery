@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, ArrowRight } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, ArrowRight, Clock, ChefHat } from 'lucide-react';
 import { mockRecipes } from '../../lib/mockData';
+import { useAppStore } from '../../store/useAppStore';
 
-export const CatalogPage: React.FC = () => {
+interface CatalogPageProps {
+  isPreviewMode?: boolean;
+}
+
+export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<{id: string, qty: number}[]>([]);
+  const { settings } = useAppStore();
   
   const publishedProducts = mockRecipes?.filter(r => r.published) || [
     { id: '1', name: 'Pastel de Zanahoria', description: 'Delicioso pastel húmedo con betún de queso crema.', price: 450, category: 'Pasteles', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80' },
@@ -38,24 +44,32 @@ export const CatalogPage: React.FC = () => {
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl font-poppins">M</div>
             <h1 className="text-2xl font-bold font-poppins text-gray-900 tracking-tight">Marea Dulce</h1>
           </div>
-          <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-            <ShoppingCart className="w-6 h-6" />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1">
-                {cartCount}
-              </span>
-            )}
-          </button>
+          {!isPreviewMode && (
+            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <ShoppingCart className="w-6 h-6" />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center transform translate-x-1 -translate-y-1">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
       {/* Hero */}
       <div className="bg-primary text-white py-20 px-4 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold font-poppins mb-4 max-w-2xl mx-auto leading-tight">Postres artesanales creados con pasión</h2>
-        <p className="text-primary-100 text-lg mb-8 max-w-xl mx-auto">Explora nuestro catálogo y agenda tu pedido. Calidad y sabor en cada mordida.</p>
-        <button onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })} className="bg-white text-primary px-8 py-3 rounded-full font-semibold hover:bg-gray-50 transition-colors shadow-lg">
-          Ver Catálogo
-        </button>
+        <h2 className="text-4xl md:text-5xl font-bold font-poppins mb-4 max-w-2xl mx-auto leading-tight">
+          {settings.catalog_hero_title}
+        </h2>
+        <p className="text-primary-100 text-lg mb-8 max-w-xl mx-auto">
+          {settings.catalog_hero_subtitle}
+        </p>
+        {!isPreviewMode && (
+          <button onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })} className="bg-white text-primary px-8 py-3 rounded-full font-semibold hover:bg-gray-50 transition-colors shadow-lg">
+            Ver Catálogo
+          </button>
+        )}
       </div>
 
       {/* Grid */}
@@ -69,14 +83,37 @@ export const CatalogPage: React.FC = () => {
                   {product.category}
                 </span>
               </div>
-              <div className="p-5">
+              <div className="p-5 flex flex-col h-full">
                 <h3 className="font-bold text-lg text-gray-900 mb-1 font-poppins">{product.name}</h3>
-                <p className="text-gray-500 text-sm mb-4 line-clamp-2 min-h-[40px]">{product.description}</p>
-                <div className="flex items-center justify-between mt-auto">
+                <p className="text-gray-500 text-sm mb-4 line-clamp-2">{product.description}</p>
+                
+                {/* Extra info based on config */}
+                {(settings.catalog_show_prep || settings.catalog_show_ingredients) && (
+                  <div className="mb-4 space-y-2 border-t border-gray-50 pt-4">
+                    {settings.catalog_show_prep && product.prep_minutes && (
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Prep: {product.prep_minutes} min</span>
+                      </div>
+                    )}
+                    {settings.catalog_show_ingredients && product.items && (
+                      <div className="flex items-start gap-2 text-xs text-gray-500">
+                        <ChefHat className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">
+                          Ingredientes: {product.items.map(i => i.ingredient_name).join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between mt-auto pt-2">
                   <span className="font-bold text-xl text-primary">${product.sale_price} <span className="text-xs text-gray-400 font-normal">MXN</span></span>
-                  <button onClick={() => addToCart(product.id)} className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
-                    <Plus className="w-5 h-5" />
-                  </button>
+                  {!isPreviewMode && (
+                    <button onClick={() => addToCart(product.id)} className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
