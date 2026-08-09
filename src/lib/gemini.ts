@@ -152,48 +152,78 @@ Responde en español con: sustituto recomendado, cantidad equivalente, ajuste de
   return callGemini(prompt);
 }
 
-// ---- IMAGE GENERATION (IMAGEN 3) ----
-export async function generateImageWithGemini(prompt: string): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error('VITE_GEMINI_API_KEY no está configurada.');
+// ---- DESIGNER PROMPT ENHANCEMENT ----
+export interface DesignerQuestion {
+  id: string;
+  question: string;
+  options: string[];
+}
+
+export async function generateDesignerQuestions(
+  idea: string,
+  style: string,
+  occasion: string
+): Promise<DesignerQuestion[]> {
+  const prompt = `
+Eres un Master Chef Repostero consultor. Un cliente quiere este pastel:
+- Idea: "${idea}"
+- Estilo: ${style}
+- Ocasión: ${occasion}
+
+Para crear el diseño 3D fotográfico perfecto de UN SOLO pastel monumental, formula 3 preguntas clave de opción múltiple que definan los detalles visuales más importantes que faltan (ej. texturas, elementos decorativos específicos, formato de pisos, etc.).
+
+Responde SOLO con un JSON válido con esta estructura exacta:
+[
+  {
+    "id": "q1",
+    "question": "¿Qué tipo de textura prefieres para la cubierta base?",
+    "options": ["Fondant liso impecable", "Betún rústico texturizado", "Ganache brillante tipo espejo", "Semi-naked cake (bizcocho visible)"]
   }
+]
+`;
 
-  // Usamos el modelo Imagen 3 oficial (versión 002) vía el endpoint predict
-  const url = `${GEMINI_BASE}/imagen-3.0-generate-002:predict?key=${GEMINI_API_KEY}`;
-  
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      instances: [
-        { prompt }
-      ],
-      parameters: {
-        sampleCount: 1,
-        // Usamos un formato panorámico (landscape) ideal para el 3-panel split
-        aspectRatio: "16:9",
-        outputOptions: {
-          mimeType: "image/jpeg",
-          compressionQuality: 85
-        }
-      }
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Error de Gemini Imagen 3: ${err}`);
+  const text = await callGemini(prompt);
+  try {
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleaned) as DesignerQuestion[];
+  } catch {
+    console.error('Error parseando JSON de Gemini:', text);
+    throw new Error('La IA no pudo generar las opciones. Intenta modificar tu idea.');
   }
+}
 
-  const data = await res.json();
-  
-  // La respuesta devuelve predicciones en base64
-  const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
-  const mimeType = data.predictions?.[0]?.mimeType || 'image/jpeg';
-  
-  if (!base64Image) {
-    throw new Error('La IA no devolvió una imagen válida.');
-  }
+export async function enhanceImagePrompt(
+  idea: string,
+  style: string,
+  occasion: string,
+  colors: string,
+  answers: Record<string, string>
+): Promise<string> {
+  const answersText = Object.entries(answers)
+    .map(([_, answer]) => `- ${answer}`)
+    .join('\n');
 
-  return `data:${mimeType};base64,${base64Image}`;
+  const prompt = `
+Eres un experto en "Prompt Engineering" para modelos de difusión de imágenes (como Midjourney o FLUX).
+El objetivo es crear un pastel hiperrealista increíble.
+
+Concepto Base del Cliente: "${idea}"
+Estilo Visual: ${style}
+Ocasión: ${occasion}
+Paleta de Colores: ${colors}
+Detalles Clave Seleccionados:
+${answersText}
+
+Redacta EL MEJOR PROMPT EN INGLÉS para generar esta imagen.
+Reglas estrictas para el prompt:
+1. Solo describe la imagen, sin introducciones.
+2. Solicita UN SOLO pastel monumental centrado ("A single, spectacular...").
+3. NO incluyas textos, letras, ni números en el pastel (usa "no text, no letters, no watermark").
+4. Solicita calidad extrema ("award winning food photography, 8k, ultra-detailed, photorealistic, cinematic studio lighting, neutral background").
+5. Traduce fielmente la esencia de los requerimientos a términos visuales de repostería profesional.
+
+Escribe el prompt resultante directamente:
+`;
+
+  return callGemini(prompt);
 }
