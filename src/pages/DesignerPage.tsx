@@ -13,7 +13,9 @@ export const DesignerPage: React.FC = () => {
   // Basic Form State
   const [description, setDescription] = useState('');
   const [style, setStyle] = useState('Minimalista');
+  const [isCustomStyle, setIsCustomStyle] = useState(false);
   const [occasion, setOccasion] = useState('Cumpleaños');
+  const [isCustomOccasion, setIsCustomOccasion] = useState(false);
   const [palette, setPalette] = useState<ColorSwatch[]>([
     { id: '1', hex: '#FFB6C1' },
     { id: '2', hex: '#E6E6FA' },
@@ -22,6 +24,7 @@ export const DesignerPage: React.FC = () => {
   // AI Conversational State
   const [questions, setQuestions] = useState<DesignerQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   
   // Result State
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -70,8 +73,13 @@ export const DesignerPage: React.FC = () => {
     try {
       const colors = palette.map(p => p.hex).join(', ');
       
+      const finalAnswers: Record<string, string> = {};
+      Object.entries(answers).forEach(([qId, ans]) => {
+        finalAnswers[qId] = ans === 'Otros...' ? (customAnswers[qId] || 'Sin especificar') : ans;
+      });
+      
       // Step 1: Enhance prompt using Gemini
-      const masterPrompt = await enhanceImagePrompt(description, style, occasion, colors, answers);
+      const masterPrompt = await enhanceImagePrompt(description, style, occasion, colors, finalAnswers);
       setPromptUsed(masterPrompt);
       
       // Step 2: Generate image using custom API
@@ -105,6 +113,7 @@ export const DesignerPage: React.FC = () => {
     setStep('initial');
     setQuestions([]);
     setAnswers({});
+    setCustomAnswers({});
   };
 
   const downloadImage = async (url: string) => {
@@ -162,38 +171,68 @@ export const DesignerPage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 font-poppins">Estilo Visual</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <select
+                  value={isCustomStyle ? 'Otro...' : style}
+                  onChange={(e) => {
+                    if (e.target.value === 'Otro...') {
+                      setIsCustomStyle(true);
+                      setStyle('');
+                    } else {
+                      setIsCustomStyle(false);
+                      setStyle(e.target.value);
+                    }
+                  }}
+                  disabled={step !== 'initial'}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm disabled:opacity-70 disabled:bg-gray-50"
+                >
                   {styles.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => setStyle(s)}
-                      disabled={step !== 'initial'}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-all ${
-                        style === s ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      } disabled:opacity-70`}
-                    >
-                      {s}
-                    </button>
+                    <option key={s} value={s}>{s}</option>
                   ))}
-                </div>
+                  <option value="Otro...">Otro... (Personalizado)</option>
+                </select>
+                {isCustomStyle && (
+                  <input
+                    type="text"
+                    value={style}
+                    onChange={e => setStyle(e.target.value)}
+                    disabled={step !== 'initial'}
+                    placeholder="Escribe un estilo personalizado..."
+                    className="w-full mt-2 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm disabled:bg-gray-50"
+                  />
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 font-poppins">Ocasión</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <select
+                  value={isCustomOccasion ? 'Otro...' : occasion}
+                  onChange={(e) => {
+                    if (e.target.value === 'Otro...') {
+                      setIsCustomOccasion(true);
+                      setOccasion('');
+                    } else {
+                      setIsCustomOccasion(false);
+                      setOccasion(e.target.value);
+                    }
+                  }}
+                  disabled={step !== 'initial'}
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm disabled:opacity-70 disabled:bg-gray-50"
+                >
                   {occasions.map(o => (
-                    <button
-                      key={o}
-                      onClick={() => setOccasion(o)}
-                      disabled={step !== 'initial'}
-                      className={`px-3 py-2 text-sm rounded-lg border transition-all ${
-                        occasion === o ? 'border-primary bg-primary/5 text-primary font-medium' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                      } disabled:opacity-70`}
-                    >
-                      {o}
-                    </button>
+                    <option key={o} value={o}>{o}</option>
                   ))}
-                </div>
+                  <option value="Otro...">Otro... (Personalizado)</option>
+                </select>
+                {isCustomOccasion && (
+                  <input
+                    type="text"
+                    value={occasion}
+                    onChange={e => setOccasion(e.target.value)}
+                    disabled={step !== 'initial'}
+                    placeholder="Escribe una ocasión personalizada..."
+                    className="w-full mt-2 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent text-sm disabled:bg-gray-50"
+                  />
+                )}
               </div>
 
               <div className="pt-2 border-t border-gray-100">
@@ -248,6 +287,29 @@ export const DesignerPage: React.FC = () => {
                           <span className={`text-sm ${answers[q.id] === opt ? 'text-primary font-medium' : 'text-gray-600'}`}>{opt}</span>
                         </label>
                       ))}
+                      <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${answers[q.id] === 'Otros...' ? 'bg-primary/5 border-primary' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                        <input
+                          type="radio"
+                          name={q.id}
+                          value="Otros..."
+                          checked={answers[q.id] === 'Otros...'}
+                          onChange={(e) => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          className="mt-1 text-primary focus:ring-primary"
+                          disabled={step !== 'answering'}
+                        />
+                        <span className={`text-sm ${answers[q.id] === 'Otros...' ? 'text-primary font-medium' : 'text-gray-600'}`}>Otros... (Personalizado)</span>
+                      </label>
+                      {answers[q.id] === 'Otros...' && (
+                        <input
+                          type="text"
+                          placeholder="Especifique su preferencia..."
+                          value={customAnswers[q.id] || ''}
+                          onChange={e => setCustomAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                          className="w-full mt-2 p-3 border border-gray-300 rounded-lg text-sm"
+                          disabled={step !== 'answering'}
+                          autoFocus
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -299,11 +361,11 @@ export const DesignerPage: React.FC = () => {
               </div>
             ) : step === 'result' && generatedImage ? (
               <div className="space-y-4 flex-1 flex flex-col z-10 relative">
-                <div className="group relative rounded-xl overflow-hidden border-4 border-white shadow-xl bg-white flex-1 flex items-center justify-center min-h-[400px]">
+                <div className="group relative rounded-xl overflow-hidden border-4 border-white shadow-xl bg-white flex-1 flex items-start justify-center min-h-[400px]">
                   <img
                     src={generatedImage}
                     alt={`Render Maestro`}
-                    className="w-full h-auto max-h-[700px] object-cover transition-transform duration-700 hover:scale-105"
+                    className="w-full h-auto max-h-[700px] object-contain object-top transition-transform duration-700 hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-end pb-8 gap-3">
