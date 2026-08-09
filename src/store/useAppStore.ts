@@ -53,6 +53,24 @@ export const useAppStore = create<AppState>()(
           },
         })),
     }),
-    { name: 'marea-app' }
+    { 
+      name: 'marea-app',
+      merge: (persistedState: any, currentState: AppState) => {
+        if (!persistedState) return currentState;
+        const state = { ...currentState, ...persistedState };
+        if (persistedState.settings) {
+          state.settings = { ...currentState.settings, ...persistedState.settings };
+          
+          // Ensure new sidebar items from code updates are added to persisted state
+          const existingIds = new Set(state.settings.sidebar_navigation_order.map((i: any) => i.id));
+          DEFAULT_SIDEBAR_ITEMS.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              state.settings.sidebar_navigation_order.push(item);
+            }
+          });
+        }
+        return state;
+      }
+    }
   )
 );
