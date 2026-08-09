@@ -4,11 +4,13 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useShortcuts } from '../../hooks/useShortcuts';
+import { useCapacitor } from '../../hooks/useCapacitor';
 
 import { CommandPalette } from '../ui/CommandPalette';
 
 export const AppLayout: React.FC = () => {
   useShortcuts();
+  useCapacitor();
   
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-bg)' }}>

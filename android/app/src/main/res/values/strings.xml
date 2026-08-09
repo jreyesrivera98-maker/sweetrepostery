@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MAREA dulce</string>
+    <string name="title_activity_main">MAREA dulce</string>
+    <string name="package_name">com.sweetrepostery.app</string>
+    <string name="custom_url_scheme">com.sweetrepostery.app</string>
+</resources>
