@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Wand2, Sparkles, CheckCircle2 } from 'lucide-react';
-import { generateRecipeWithAI, type GeneratedRecipe } from '../../../lib/gemini';
+import { generateRecipeWithAI, type GeneratedRecipe } from '../../lib/gemini';
 
 interface MareaRecipeAiProps {
   onRecipeGenerated: (recipe: GeneratedRecipe) => void;
