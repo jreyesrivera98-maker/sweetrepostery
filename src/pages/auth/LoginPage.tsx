@@ -49,7 +49,22 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+    try {
+      if (isMockMode) {
+        setLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setUser({ id: 'mock-google-123', email: 'usuario@gmail.com', role: 'admin', name: 'Usuario de Google' });
+        navigate('/');
+        return;
+      }
+      
+      const { error: authError } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+      if (authError) throw authError;
+    } catch (err: unknown) {
+      setError('Error al iniciar sesión con Google.');
+    } finally {
+      if (isMockMode) setLoading(false);
+    }
   };
 
   return (
