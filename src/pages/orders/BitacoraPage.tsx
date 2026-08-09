@@ -156,32 +156,32 @@ export const BitacoraPage: React.FC = () => {
               const payment = getPaymentStatus(order);
               return (
                 <tr key={order.id}>
-                  <td><span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.8rem', color: '#6C5CE7' }}>{order.folio}</span></td>
-                  <td style={{ fontSize: '0.8rem' }}>{format(new Date(order.created_at), 'dd MMM yyyy', { locale: es })}</td>
-                  <td style={{ fontWeight: 500 }}>{order.customer_name}</td>
-                  <td><span className="badge badge-primary">{order.channel}</span></td>
-                  <td style={{ fontSize: '0.8rem', color: '#636E72' }}>{order.items.length} ítem(s)</td>
-                  <td style={{ fontWeight: 600 }}>${order.total.toLocaleString('es-MX')}</td>
-                  <td style={{ color: '#28A745' }}>${order.advance_paid.toLocaleString('es-MX')}</td>
-                  <td style={{ color: order.balance_due > 0 ? '#E74C3C' : '#28A745' }}>${order.balance_due.toLocaleString('es-MX')}</td>
-                  <td><span className={payment.style}>{payment.label}</span></td>
-                  <td>
+                  <td data-label="Folio"><span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.8rem', color: '#6C5CE7' }}>{order.folio}</span></td>
+                  <td data-label="Fecha" style={{ fontSize: '0.8rem' }}>{format(new Date(order.created_at), 'dd MMM yyyy', { locale: es })}</td>
+                  <td data-label="Cliente" style={{ fontWeight: 500 }}>{order.customer_name}</td>
+                  <td data-label="Canal"><span className="badge badge-primary">{order.channel}</span></td>
+                  <td data-label="Items" style={{ fontSize: '0.8rem', color: '#636E72' }}>{order.items.length} ítem(s)</td>
+                  <td data-label="Total" style={{ fontWeight: 600 }}>${order.total.toLocaleString('es-MX')}</td>
+                  <td data-label="Anticipo" style={{ color: '#28A745' }}>${order.advance_paid.toLocaleString('es-MX')}</td>
+                  <td data-label="Saldo" style={{ color: order.balance_due > 0 ? '#E74C3C' : '#28A745' }}>${order.balance_due.toLocaleString('es-MX')}</td>
+                  <td data-label="Pago"><span className={payment.style}>{payment.label}</span></td>
+                  <td data-label="Estado">
                     <select
-                      className="input-marea"
-                      style={{ width: 'auto', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }}
+                      className="input-marea min-h-[44px]"
+                      style={{ width: '100%', maxWidth: '140px', padding: '0.2rem 0.4rem', fontSize: '0.72rem' }}
                       value={order.status}
                       onChange={e => handleUpdateStatus(order.id, e.target.value as OrderStatus)}
                     >
                       {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </td>
-                  <td>
+                  <td className="actions-cell">
                     <button
                       onClick={() => setDeleteId(order.id)}
-                      style={{ padding: '0.3rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }}
+                      style={{ padding: '0.3rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C', minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="Eliminar pedido"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={18} />
                     </button>
                   </td>
                 </tr>

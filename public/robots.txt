@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /catalogo
+Disallow: /pedidos
+Disallow: /clientes
+Disallow: /recetas
+Disallow: /inventario
+Disallow: /proveedores
+Disallow: /reportes
+Disallow: /configuracion
+Disallow: /disenador
+
+Sitemap: https://sweetrepostery.vercel.app/sitemap.xml

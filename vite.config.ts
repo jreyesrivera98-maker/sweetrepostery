@@ -22,4 +22,20 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor-react'
+            if (id.includes('@radix-ui')) return 'vendor-radix'
+            if (id.includes('lucide')) return 'vendor-ui'
+            if (id.includes('date-fns') || id.includes('zustand') || id.includes('zod') || id.includes('react-hook-form')) return 'vendor-utils'
+            return 'vendor'
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
+  }
 })

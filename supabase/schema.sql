@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
   primary_color TEXT DEFAULT '#6C5CE7',
   secondary_color TEXT DEFAULT '#D6BBFB',
   sidebar_navigation_order JSONB DEFAULT '[]'::jsonb,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
   email TEXT,
   category TEXT,
   notes TEXT,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -51,6 +53,7 @@ CREATE TABLE IF NOT EXISTS ingredients (
   min_stock NUMERIC DEFAULT 0,
   category TEXT,
   supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -63,7 +66,8 @@ CREATE TABLE IF NOT EXISTS supplier_ingredient_prices (
   ingredient_id UUID REFERENCES ingredients(id) ON DELETE CASCADE,
   package_presentation TEXT,
   package_cost NUMERIC DEFAULT 0,
-  unit_calculated_cost NUMERIC DEFAULT 0
+  unit_calculated_cost NUMERIC DEFAULT 0,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid()
 );
 
 -- ============================================================
@@ -85,6 +89,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   mold_dimensions JSONB DEFAULT '{}'::jsonb,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   ai_generated BOOLEAN DEFAULT false,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -101,6 +106,7 @@ CREATE TABLE IF NOT EXISTS customers (
   notes TEXT,
   important_dates JSONB DEFAULT '[]'::jsonb,
   allergies TEXT,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -122,6 +128,7 @@ CREATE TABLE IF NOT EXISTS orders (
   qc_checklist JSONB DEFAULT '{}'::jsonb,
   delivery_notes TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -145,6 +152,7 @@ CREATE TABLE IF NOT EXISTS quotes (
   balance_amount NUMERIC DEFAULT 0,
   ai_suggestion JSONB,
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'accepted', 'rejected')),
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -159,6 +167,7 @@ CREATE TABLE IF NOT EXISTS design_renders (
   color_palette_type TEXT DEFAULT 'preset',
   custom_color_palette JSONB DEFAULT '[]'::jsonb,
   image_url TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -175,13 +184,13 @@ ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE design_renders ENABLE ROW LEVEL SECURITY;
 
--- Temporary permissive policies (restrict per role after auth setup)
-CREATE POLICY "allow_all_authenticated" ON app_settings FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON suppliers FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON ingredients FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON supplier_ingredient_prices FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON recipes FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON customers FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON orders FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON quotes FOR ALL USING (true);
-CREATE POLICY "allow_all_authenticated" ON design_renders FOR ALL USING (true);
+-- Secure tenant isolation policies (RLS Hardening)
+CREATE POLICY "tenant_isolation" ON app_settings FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON suppliers FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON ingredients FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON supplier_ingredient_prices FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON recipes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON customers FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON orders FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON quotes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "tenant_isolation" ON design_renders FOR ALL USING (auth.uid() = user_id);

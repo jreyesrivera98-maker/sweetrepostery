@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, List, LayoutGrid, Search, Trash2 } from 'lucide-react';
+import { Plus, List, LayoutGrid, Search, Trash2, Calendar, Phone, CreditCard } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
-import { format } from 'date-fns';
+import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Order, OrderStatus } from '../../types';
-import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { X } from 'lucide-react';
 import { useDataStore } from '../../store/useDataStore';
+import { useOperationalIntelligence } from '../../hooks/useOperationalIntelligence';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
+import { Drawer } from '../../components/ui/Drawer';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Badge } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
 
-const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (order: Order) => void }> = ({ isOpen, onClose, onSave }) => {
+const OrderFormDrawer: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (order: Order) => void }> = ({ isOpen, onClose, onSave }) => {
   const recipes = useDataStore(s => s.recipes);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -23,14 +29,12 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
   const [price, setPrice] = useState(0);
   const [advance, setAdvance] = useState(0);
 
-  if (!isOpen) return null;
-
   const handleRecipeChange = (id: string) => {
     setRecipeId(id);
     const r = recipes.find(rec => rec.id === id);
     if (r) {
       setPrice(r.sale_price * quantity);
-      setAdvance((r.sale_price * quantity) / 2); // Default 50%
+      setAdvance((r.sale_price * quantity) / 2);
     }
   };
 
@@ -68,91 +72,69 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: '600px' }}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-poppins font-bold text-gray-900">Nuevo Pedido Manual</h2>
-          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200"><X size={18} /></button>
+    <Drawer isOpen={isOpen} onClose={onClose} title="Nuevo Pedido" width="lg">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="p-4 bg-gray-50/50">
+          <h3 className="font-poppins font-bold text-sm mb-4 text-text">Información del Cliente</h3>
+          <div className="space-y-4">
+            <Input label="Nombre del cliente *" required value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Ej. Juan Pérez" />
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="Teléfono" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="10 dígitos" />
+              <Select 
+                label="Canal de Venta" 
+                value={channel} 
+                onChange={e => setChannel(e.target.value as any)}
+                options={[
+                  { label: 'Mostrador / Manual', value: 'manual' },
+                  { label: 'WhatsApp', value: 'whatsapp' },
+                  { label: 'Instagram', value: 'instagram' },
+                  { label: 'Catálogo', value: 'catalog' }
+                ]}
+              />
+            </div>
+            <Input type="date" label="Fecha de Entrega" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+          </div>
+        </Card>
+        
+        <Card className="p-4 bg-gray-50/50">
+          <h3 className="font-poppins font-bold text-sm mb-4 text-text">Detalle del Producto</h3>
+          <div className="space-y-4">
+            <Select 
+              label="Receta *" 
+              required 
+              value={recipeId} 
+              onChange={e => handleRecipeChange(e.target.value)}
+              options={[{ label: '— Seleccionar —', value: '' }, ...recipes.map(r => ({ label: r.name, value: r.id }))]}
+            />
+            <Input type="number" label="Cantidad" min="1" required value={quantity} onChange={e => handleQuantityChange(Number(e.target.value))} />
+          </div>
+        </Card>
+
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <h3 className="font-poppins font-bold text-sm mb-4 text-primary-dark">Resumen de Pago</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <Input type="number" label="Precio Total (MXN)" required value={price} onChange={e => setPrice(Number(e.target.value))} className="font-bold" />
+            <Input type="number" label="Anticipo Recibido (MXN)" required value={advance} onChange={e => setAdvance(Number(e.target.value))} />
+          </div>
+        </Card>
+
+        <div className="flex gap-3 pt-4 border-t border-border mt-auto sticky bottom-0 bg-white pb-4">
+          <Button type="button" variant="ghost" onClick={onClose} fullWidth>Cancelar</Button>
+          <Button type="submit" variant="primary" fullWidth>Confirmar Pedido</Button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
-              <input required className="input-marea" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombre del cliente" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-              <input className="input-marea" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Ej. 5551234567" />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Entrega</label>
-              <input type="date" className="input-marea" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Canal de Venta</label>
-              <select className="input-marea" value={channel} onChange={e => setChannel(e.target.value as any)}>
-                <option value="manual">Mostrador / Manual</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="instagram">Instagram</option>
-                <option value="catalog">Catálogo</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-100 pt-4 mt-2">
-            <h3 className="font-poppins font-semibold text-sm mb-3">Detalle del Producto</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Receta *</label>
-                <select required className="input-marea" value={recipeId} onChange={e => handleRecipeChange(e.target.value)}>
-                  <option value="">— Seleccionar —</option>
-                  {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                <input type="number" min="1" required className="input-marea" value={quantity} onChange={e => handleQuantityChange(Number(e.target.value))} />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Total (MXN)</label>
-              <input type="number" required className="input-marea font-bold text-primary" value={price} onChange={e => setPrice(Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Anticipo Recibido (MXN)</label>
-              <input type="number" required className="input-marea text-green-600" value={advance} onChange={e => setAdvance(Number(e.target.value))} />
-            </div>
-          </div>
-
-          <div className="pt-4 flex gap-3">
-            <button type="button" onClick={onClose} className="btn-ghost flex-1 justify-center">Cancelar</button>
-            <button type="submit" className="btn-primary flex-1 justify-center">Crear Pedido</button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Drawer>
   );
 };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Pendiente',
-  production: 'En Producción',
-  ready: 'Listo',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
+  pending: 'Pendiente', production: 'En Producción',
+  ready: 'Listo', delivered: 'Entregado', cancelled: 'Cancelado',
 };
 
-const CHANNEL_COLORS: Record<string, { bg: string; color: string }> = {
-  whatsapp: { bg: '#E8FFF4', color: '#0A6640' },
-  instagram: { bg: '#FFF0F6', color: '#9B1D6A' },
-  catalog: { bg: '#EDE9FF', color: '#4834D4' },
-  manual: { bg: '#F4F3FF', color: '#636E72' },
+const STATUS_BADGE: Record<OrderStatus, string> = {
+  pending: 'warning', production: 'info',
+  ready: 'primary', delivered: 'success', cancelled: 'danger',
 };
 
 const KANBAN_COLUMNS: { id: OrderStatus; label: string; color: string }[] = [
@@ -165,57 +147,65 @@ const KANBAN_COLUMNS: { id: OrderStatus; label: string; color: string }[] = [
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const orders = useDataStore(s => s.orders);
-  const recipes = useDataStore(s => s.recipes);
-  const ingredients = useDataStore(s => s.ingredients);
   const updateStoreOrder = useDataStore(s => s.updateOrder);
   const deleteStoreOrder = useDataStore(s => s.deleteOrder);
-  const updateStoreIngredient = useDataStore(s => s.updateIngredient);
   const addStoreOrder = useDataStore(s => s.addOrder);
   
   const [view, setView] = useState<'list' | 'kanban'>('list');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [savedView, setSavedView] = useState<'all' | 'today' | 'pending' | 'production' | 'late'>('all');
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isNewDrawerOpen, setIsNewDrawerOpen] = useState(false);
   const { toast } = useToast();
+  
+  const { productionInsight } = useOperationalIntelligence();
 
   const filtered = orders.filter(o => {
-    const matchSearch = o.customer_name.toLowerCase().includes(search.toLowerCase()) || o.folio.includes(search);
+    const matchSearch = o.customer_name.toLowerCase().includes(search.toLowerCase()) || o.folio.toLowerCase().includes(search.toLowerCase());
+    
+    // View logic
+    let matchView = true;
+    if (savedView === 'today') {
+      matchView = o.delivery_date ? isToday(new Date(o.delivery_date)) : false;
+    } else if (savedView === 'pending') {
+      matchView = o.status === 'pending';
+    } else if (savedView === 'production') {
+      matchView = o.status === 'production';
+    } else if (savedView === 'late') {
+      matchView = o.delivery_date ? isBefore(new Date(o.delivery_date), startOfDay(new Date())) && !['ready', 'delivered', 'cancelled'].includes(o.status) : false;
+    }
+
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-    return matchSearch && matchStatus;
+    return matchSearch && matchStatus && matchView;
   });
 
-  const handleInventoryDeduction = async (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
+  const toggleSelection = (id: string) => {
+    setSelectedOrders(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
 
-    let hasDeducted = false;
-    for (const item of order.items) {
-      const recipe = recipes.find(r => r.id === item.recipe_id);
-      if (!recipe) continue;
-      
-      for (const rItem of recipe.items) {
-        const ingredient = ingredients.find(i => i.id === rItem.ingredient_id);
-        if (!ingredient) continue;
-        
-        const totalToDeduct = rItem.quantity * item.quantity;
-        const newStock = Math.max(0, ingredient.stock - totalToDeduct);
-        
-        try {
-          // Attempt real DB update if present, otherwise just update store
-          await supabase.from('ingredients').update({ stock: newStock }).eq('id', ingredient.id);
-          updateStoreIngredient(ingredient.id, { stock: newStock });
-          hasDeducted = true;
-        } catch (e) {
-          console.error('Failed to deduct stock for', ingredient.name);
-          updateStoreIngredient(ingredient.id, { stock: newStock });
-          hasDeducted = true;
-        }
-      }
+  const toggleAll = () => {
+    if (selectedOrders.length === filtered.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(filtered.map(o => o.id));
     }
-    if (hasDeducted) {
-      toast.info('Inventario actualizado automáticamente');
+  };
+
+  const handleBulkStatus = (status: OrderStatus) => {
+    if (!status) return;
+    selectedOrders.forEach(id => updateStoreOrder(id, { status }));
+    setSelectedOrders([]);
+    toast.success(`${selectedOrders.length} pedidos actualizados a ${STATUS_LABELS[status]}`);
+  };
+
+  const handleBulkDelete = () => {
+    if (window.confirm(`¿Estás seguro de eliminar ${selectedOrders.length} pedidos?`)) {
+      selectedOrders.forEach(id => deleteStoreOrder(id));
+      setSelectedOrders([]);
+      toast.success('Pedidos eliminados');
     }
   };
 
@@ -223,142 +213,185 @@ export const OrdersPage: React.FC = () => {
     if (!result.destination) return;
     const newStatus = result.destination.droppableId as OrderStatus;
     const id = result.draggableId;
-    const oldStatus = orders.find(o => o.id === id)?.status;
-    
-    // Optimistic UI update
     updateStoreOrder(id, { status: newStatus });
-    
-    if (oldStatus === 'pending' && (newStatus === 'production' || newStatus === 'delivered')) {
-      handleInventoryDeduction(id);
-    }
-    
-    try {
-      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', id);
-      if (error) throw error;
-      toast.success('Estado del pedido actualizado');
-    } catch (err: any) {
-      console.error(err);
-      toast.info('Actualizado localmente (modo mock)');
-    }
   };
 
   const updateStatus = async (id: string, status: OrderStatus) => {
-    const oldStatus = orders.find(o => o.id === id)?.status;
-    // Optimistic UI update
     updateStoreOrder(id, { status });
-    
-    if (oldStatus === 'pending' && (status === 'production' || status === 'delivered')) {
-      handleInventoryDeduction(id);
-    }
-    
-    try {
-      const { error } = await supabase.from('orders').update({ status }).eq('id', id);
-      if (error) throw error;
-      toast.success('Estado del pedido actualizado');
-    } catch (err: any) {
-      console.error(err);
-      toast.info('Actualizado localmente (modo mock)');
-    }
+    toast.success('Estado actualizado');
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
     setIsDeleting(true);
-    try {
-      const { error } = await supabase.from('orders').delete().eq('id', deleteId);
-      if (error) throw error;
-      deleteStoreOrder(deleteId);
-      toast.success('Pedido eliminado correctamente');
-    } catch (err: any) {
-      console.error(err);
-      deleteStoreOrder(deleteId);
-      toast.info('Eliminado localmente');
-    } finally {
-      setIsDeleting(false);
-      setDeleteId(null);
-    }
+    deleteStoreOrder(deleteId);
+    setIsDeleting(false);
+    setDeleteId(null);
+    toast.success('Pedido eliminado');
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Pedidos</h1>
-          <p className="page-subtitle">{orders.length} pedidos registrados</p>
-        </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {/* View toggle */}
-          <div style={{ display: 'flex', background: '#F4F3FF', borderRadius: '0.625rem', padding: '3px', border: '1px solid #E8E3FF' }}>
-            <button onClick={() => setView('list')} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', background: view === 'list' ? '#6C5CE7' : 'transparent', color: view === 'list' ? 'white' : '#636E72', transition: 'all 0.2s' }}>
-              <List size={16} />
-            </button>
-            <button onClick={() => setView('kanban')} style={{ padding: '0.375rem 0.625rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer', background: view === 'kanban' ? '#6C5CE7' : 'transparent', color: view === 'kanban' ? 'white' : '#636E72', transition: 'all 0.2s' }}>
-              <LayoutGrid size={16} />
-            </button>
+    <div className="max-w-7xl mx-auto pb-12">
+      <PageHeader
+        title="Pedidos"
+        description={`Gestiona ${orders.length} pedidos registrados`}
+        primaryAction={<Button onClick={() => setIsNewDrawerOpen(true)} leftIcon={<Plus size={18} />}>Nuevo Pedido</Button>}
+        secondaryAction={<Button variant="outline" onClick={() => navigate('/pedidos/bitacora')} leftIcon={<List size={18} />}>Bitácora</Button>}
+      />
+
+      {productionInsight.risk === 'Alto' && (
+        <div className="mb-6 bg-danger/10 border border-danger/30 rounded-xl p-4 flex items-start gap-3">
+          <div className="mt-0.5"><div className="w-2 h-2 rounded-full bg-danger animate-pulse" /></div>
+          <div>
+            <h4 className="text-danger-dark font-bold text-sm">Alerta de Capacidad de Producción</h4>
+            <p className="text-sm text-danger-dark/80 mt-1">
+              Tienes <strong>{productionInsight.tomorrowLoad}</strong> pedidos programados para entregar mañana, superando tu promedio histórico de <strong>{productionInsight.historicalCapacity}</strong>. Considera asignar turnos extra o rechazar nuevos pedidos urgentes.
+            </p>
           </div>
-          <button onClick={() => navigate('/pedidos/bitacora')} className="btn-ghost">Bitácora</button>
-          <button onClick={() => setIsNewModalOpen(true)} className="btn-primary"><Plus size={16} /> Nuevo Pedido</button>
         </div>
-      </div>
+      )}
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
-          <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#B2BEC3' }} />
-          <input className="input-marea" style={{ paddingLeft: '2.25rem' }} placeholder="Buscar por cliente o folio..." value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
-        <select className="input-marea" style={{ width: 'auto' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="all">Todos los estados</option>
-          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-      </div>
-
-      {/* LIST VIEW */}
-      {view === 'list' && (
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <table className="marea-table">
-            <thead>
-              <tr>
-                <th>Folio</th><th>Cliente</th><th>Entrega</th><th>Estado</th><th>Canal</th><th>Total</th><th>Anticipo</th><th>Saldo</th><th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(order => {
-                const ch = CHANNEL_COLORS[order.channel] || CHANNEL_COLORS.manual;
-                return (
-                  <tr key={order.id}>
-                    <td><span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.8rem', color: '#6C5CE7' }}>{order.folio}</span></td>
-                    <td><span style={{ fontWeight: 500 }}>{order.customer_name}</span><br /><span style={{ fontSize: '0.75rem', color: '#636E72' }}>{order.customer_phone}</span></td>
-                    <td style={{ fontSize: '0.8rem' }}>{order.delivery_date ? format(new Date(order.delivery_date), 'dd MMM yyyy', { locale: es }) : '—'}</td>
-                    <td><span className={`status-pill status-${order.status}`}>{STATUS_LABELS[order.status]}</span></td>
-                    <td><span className="badge" style={{ background: ch.bg, color: ch.color }}>{order.channel}</span></td>
-                    <td style={{ fontWeight: 600 }}>${order.total.toLocaleString('es-MX')}</td>
-                    <td style={{ color: '#28A745' }}>${order.advance_paid.toLocaleString('es-MX')}</td>
-                    <td style={{ color: order.balance_due > 0 ? '#E74C3C' : '#28A745' }}>${order.balance_due.toLocaleString('es-MX')}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <select className="input-marea" style={{ width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} value={order.status} onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}>
-                          {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                        </select>
-                        <button 
-                          onClick={() => setDeleteId(order.id)}
-                          style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }}
-                          title="Eliminar pedido"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#636E72', fontFamily: 'Inter, sans-serif' }}>
-              No se encontraron pedidos con ese criterio.
+      <Card className="mb-6 p-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex w-full md:w-auto gap-4 flex-1">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
+              <input 
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-border rounded-lg text-sm outline-none focus:border-primary transition-colors"
+                placeholder="Buscar por cliente o folio..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+              />
             </div>
+            <select 
+              className="bg-gray-50 border border-border rounded-lg px-4 py-2 text-sm outline-none focus:border-primary cursor-pointer hidden md:block"
+              value={statusFilter} 
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="all">Todos los estados</option>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          
+          <div className="bg-bg p-1 rounded-lg border border-border hidden md:flex">
+            <button onClick={() => setView('list')} className={`p-2 rounded-md transition-colors ${view === 'list' ? 'bg-primary text-white shadow' : 'text-muted hover:text-text'}`}><List size={18} /></button>
+            <button onClick={() => setView('kanban')} className={`p-2 rounded-md transition-colors ${view === 'kanban' ? 'bg-primary text-white shadow' : 'text-muted hover:text-text'}`}><LayoutGrid size={18} /></button>
+          </div>
+        </div>
+
+        {/* Saved Views Chips */}
+        <div className="flex gap-2 mt-4 overflow-x-auto pb-2 custom-scrollbar">
+          {[
+            { id: 'all', label: 'Todos' },
+            { id: 'today', label: 'Entregas Hoy' },
+            { id: 'pending', label: 'Pendientes' },
+            { id: 'production', label: 'En Producción' },
+            { id: 'late', label: 'Atrasados' },
+          ].map(v => (
+            <button
+              key={v.id}
+              onClick={() => setSavedView(v.id as any)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
+                savedView === v.id 
+                  ? 'bg-primary text-white border-primary' 
+                  : 'bg-white text-muted border-border hover:bg-bg hover:text-text'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {/* LIST VIEW (Responsive: Table on Desktop, Cards on Mobile) */}
+      {view === 'list' && (
+        <div className="grid gap-4 md:block">
+          {filtered.length === 0 ? (
+            <div className="text-center p-12 text-muted border border-dashed rounded-xl border-border bg-surface/50">
+              No se encontraron pedidos.
+            </div>
+          ) : (
+            <>
+              {/* Mobile view */}
+              <div className="md:hidden space-y-4">
+                {filtered.map(order => (
+                  <Card key={order.id} className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <span className="text-primary font-bold text-sm">{order.folio}</span>
+                        <h3 className="font-bold text-text mt-1">{order.customer_name}</h3>
+                      </div>
+                      <Badge variant={STATUS_BADGE[order.status] as any}>{STATUS_LABELS[order.status]}</Badge>
+                    </div>
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex items-center gap-2 text-muted"><Calendar size={14} /> {order.delivery_date ? format(new Date(order.delivery_date), 'dd MMM yyyy', { locale: es }) : 'Sin fecha'}</div>
+                      <div className="flex items-center gap-2 text-muted"><Phone size={14} /> {order.customer_phone || 'Sin teléfono'}</div>
+                      <div className="flex items-center gap-2 font-medium text-text"><CreditCard size={14} className="text-muted"/> Total: ${order.total.toLocaleString()}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <select className="flex-1 bg-gray-50 border border-border rounded-lg px-2 text-sm min-h-[44px]" value={order.status} onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}>
+                        {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                      <Button variant="danger" size="sm" onClick={() => setDeleteId(order.id)} className="min-h-[44px] min-w-[44px] p-0 flex items-center justify-center"><Trash2 size={18} /></Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+              
+              {/* Desktop view */}
+              <div className="hidden md:block bg-surface border border-border rounded-xl overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-bg border-b border-border text-muted">
+                    <tr>
+                      <th className="p-4 w-12">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                          checked={filtered.length > 0 && selectedOrders.length === filtered.length}
+                          onChange={toggleAll}
+                        />
+                      </th>
+                      <th className="p-4 font-semibold">Folio</th>
+                      <th className="p-4 font-semibold">Cliente</th>
+                      <th className="p-4 font-semibold">Entrega</th>
+                      <th className="p-4 font-semibold">Estado</th>
+                      <th className="p-4 font-semibold">Total</th>
+                      <th className="p-4 font-semibold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filtered.map(order => (
+                      <tr key={order.id} className={`transition-colors ${selectedOrders.includes(order.id) ? 'bg-primary/5' : 'hover:bg-bg/50'}`}>
+                        <td className="p-4">
+                          <input 
+                            type="checkbox" 
+                            className="rounded border-gray-300 text-primary focus:ring-primary cursor-pointer w-4 h-4"
+                            checked={selectedOrders.includes(order.id)}
+                            onChange={() => toggleSelection(order.id)}
+                          />
+                        </td>
+                        <td className="p-4 font-bold text-primary">{order.folio}</td>
+                        <td className="p-4">
+                          <div className="font-medium text-text">{order.customer_name}</div>
+                          <div className="text-xs text-muted mt-0.5">{order.customer_phone}</div>
+                        </td>
+                        <td className="p-4 text-muted">{order.delivery_date ? format(new Date(order.delivery_date), 'dd MMM yyyy', { locale: es }) : '—'}</td>
+                        <td className="p-4"><Badge variant={STATUS_BADGE[order.status] as any}>{STATUS_LABELS[order.status]}</Badge></td>
+                        <td className="p-4 font-semibold">${order.total.toLocaleString('es-MX')}</td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <select className="bg-gray-50 border border-border rounded-lg px-2 text-sm outline-none" value={order.status} onChange={e => updateStatus(order.id, e.target.value as OrderStatus)}>
+                              {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                            <button onClick={() => setDeleteId(order.id)} className="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -366,23 +399,24 @@ export const OrdersPage: React.FC = () => {
       {/* KANBAN VIEW */}
       {view === 'kanban' && (
         <DragDropContext onDragEnd={onDragEnd}>
-          <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
             {KANBAN_COLUMNS.map(col => {
               const colOrders = filtered.filter(o => o.status === col.id);
               return (
-                <div key={col.id} style={{ minWidth: '270px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', padding: '0 0.25rem' }}>
-                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: col.color }} />
-                    <span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.875rem', color: '#2D3436' }}>{col.label}</span>
-                    <span className="badge badge-primary" style={{ marginLeft: 'auto' }}>{colOrders.length}</span>
+                <div key={col.id} className="min-w-[300px] w-[300px] flex-shrink-0">
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+                      <h3 className="font-poppins font-bold text-text">{col.label}</h3>
+                    </div>
+                    <Badge variant="default">{colOrders.length}</Badge>
                   </div>
                   <Droppable droppableId={col.id}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="kanban-column"
-                        style={{ background: snapshot.isDraggingOver ? '#EDE9FF' : undefined, transition: 'background 0.2s' }}
+                        className={`min-h-[400px] p-3 rounded-xl border transition-colors ${snapshot.isDraggingOver ? 'bg-secondary-light/50 border-secondary' : 'bg-gray-50 border-dashed border-border'}`}
                       >
                         {colOrders.map((order, index) => (
                           <Draggable key={order.id} draggableId={order.id} index={index}>
@@ -391,24 +425,16 @@ export const OrdersPage: React.FC = () => {
                                 ref={drag.innerRef}
                                 {...drag.draggableProps}
                                 {...drag.dragHandleProps}
-                                className="kanban-card"
-                                style={{ ...drag.draggableProps.style, opacity: snap.isDragging ? 0.85 : 1, transform: snap.isDragging ? `${drag.draggableProps.style?.transform} rotate(2deg)` : drag.draggableProps.style?.transform }}
+                                className={`bg-white p-4 rounded-xl border border-border shadow-sm mb-3 group cursor-grab active:cursor-grabbing transition-transform ${snap.isDragging ? 'rotate-2 shadow-xl border-primary' : 'hover:border-secondary'}`}
                               >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                  <span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.75rem', color: '#6C5CE7' }}>{order.folio}</span>
-                                  <span className={`status-pill status-${order.status}`} style={{ fontSize: '0.65rem' }}>{STATUS_LABELS[order.status]}</span>
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="text-xs font-bold text-primary">{order.folio}</span>
+                                  <Badge variant={STATUS_BADGE[order.status] as any}>{STATUS_LABELS[order.status]}</Badge>
                                 </div>
-                                <div style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.25rem' }}>{order.customer_name}</div>
-                                <div style={{ fontSize: '0.75rem', color: '#636E72', marginBottom: '0.5rem' }}>
-                                  {order.delivery_date ? format(new Date(order.delivery_date), 'dd MMM', { locale: es }) : '—'}
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.9rem', color: '#2D3436' }}>
-                                    ${order.total.toLocaleString('es-MX')}
-                                  </span>
-                                  {order.balance_due > 0 && (
-                                    <span className="badge badge-warning" style={{ fontSize: '0.65rem' }}>Saldo ${order.balance_due.toLocaleString('es-MX')}</span>
-                                  )}
+                                <h4 className="font-bold text-text text-sm mb-2">{order.customer_name}</h4>
+                                <div className="flex justify-between items-center mt-4">
+                                  <span className="text-xs text-muted flex items-center gap-1"><Calendar size={12}/> {order.delivery_date ? format(new Date(order.delivery_date), 'dd MMM') : '—'}</span>
+                                  <span className="font-bold text-sm text-text">${order.total.toLocaleString()}</span>
                                 </div>
                               </div>
                             )}
@@ -416,9 +442,7 @@ export const OrdersPage: React.FC = () => {
                         ))}
                         {provided.placeholder}
                         {colOrders.length === 0 && (
-                          <div style={{ textAlign: 'center', padding: '1.5rem 0', color: '#B2BEC3', fontSize: '0.8rem', fontFamily: 'Inter, sans-serif' }}>
-                            Arrastra pedidos aquí
-                          </div>
+                          <div className="text-center py-8 text-sm text-muted font-inter">Arrastra aquí</div>
                         )}
                       </div>
                     )}
@@ -430,22 +454,42 @@ export const OrdersPage: React.FC = () => {
         </DragDropContext>
       )}
 
+      {/* FLOATING ACTION BAR FOR BULK ACTIONS */}
+      {selectedOrders.length > 0 && view === 'list' && (
+        <div className="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 z-50 animate-[slideUp_0.2s_ease]">
+          <span className="font-bold text-sm whitespace-nowrap">{selectedOrders.length} seleccionados</span>
+          <div className="w-px h-4 bg-gray-700" />
+          <select 
+            className="bg-gray-800 border-none outline-none text-sm text-white cursor-pointer px-2 py-1 rounded" 
+            onChange={(e) => handleBulkStatus(e.target.value as OrderStatus)}
+            value=""
+          >
+            <option value="" disabled>Cambiar estado a...</option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+          <div className="w-px h-4 bg-gray-700" />
+          <button onClick={handleBulkDelete} className="text-red-400 hover:text-red-300 transition-colors flex items-center gap-1 text-sm font-medium">
+            <Trash2 size={16} /> Eliminar
+          </button>
+        </div>
+      )}
+
       <AlertDialog
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={handleDelete}
         isLoading={isDeleting}
         title="Eliminar pedido"
-        description="¿Estás seguro de eliminar este pedido? Esta acción no se puede deshacer y borrará el historial del mismo."
+        description="Esta acción no se puede deshacer. ¿Deseas continuar?"
       />
 
-      <OrderFormModal 
-        isOpen={isNewModalOpen}
-        onClose={() => setIsNewModalOpen(false)}
+      <OrderFormDrawer 
+        isOpen={isNewDrawerOpen}
+        onClose={() => setIsNewDrawerOpen(false)}
         onSave={(o) => {
           addStoreOrder(o);
-          setIsNewModalOpen(false);
-          toast.success('Pedido creado exitosamente');
+          setIsNewDrawerOpen(false);
+          toast.success('Pedido creado');
         }}
       />
     </div>

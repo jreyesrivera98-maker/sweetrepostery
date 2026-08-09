@@ -44,15 +44,15 @@ export const RecipesPage: React.FC = () => {
     <div className="recipes-page">
       <div className="page-header flex justify-between items-center mb-6">
         <div>
-          <h1 className="page-title text-3xl font-bold font-poppins text-[#2D3436]">Recetario Inteligente</h1>
-          <p className="page-subtitle text-[#636E72] font-inter">Administra tus recetas y costos</p>
+          <h1 className="page-title text-3xl font-bold font-poppins text-text">Recetario Inteligente</h1>
+          <p className="page-subtitle text-muted font-inter">Administra tus recetas y costos</p>
         </div>
         <div className="flex space-x-4">
-          <Link to="/recetas/nueva" className="btn-ghost px-4 py-2 rounded-lg text-[#6C5CE7] border border-[#E8E3FF] hover:bg-[#F4F3FF] flex items-center">
+          <Link to="/recetas/nueva" className="btn-ghost px-4 py-2 rounded-lg text-primary border border-border hover:bg-bg flex items-center">
             <Plus size={18} className="mr-2" />
             Nueva Receta
           </Link>
-          <Link to="/recetas/nueva?ai=true" className="btn-primary px-4 py-2 rounded-lg bg-[#6C5CE7] text-white hover:bg-[#4834D4] flex items-center">
+          <Link to="/recetas/nueva?ai=true" className="btn-primary px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark flex items-center">
             <Wand2 size={18} className="mr-2" />
             Crear con IA
           </Link>
@@ -61,19 +61,19 @@ export const RecipesPage: React.FC = () => {
 
       <div className="filters-section flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#636E72]" size={18} />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted" size={18} />
           <input
             type="text"
             placeholder="Buscar recetas..."
-            className="input-marea w-full pl-10 pr-4 py-2 border border-[#E8E3FF] rounded-lg focus:outline-none focus:border-[#6C5CE7]"
+            className="input-marea w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary min-h-[44px]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <div className="relative w-full md:w-64">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#636E72]" size={18} />
+          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted" size={18} />
           <select
-            className="input-marea w-full pl-10 pr-4 py-2 border border-[#E8E3FF] rounded-lg focus:outline-none focus:border-[#6C5CE7] appearance-none"
+            className="input-marea w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary appearance-none min-h-[44px]"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
           >
@@ -88,12 +88,12 @@ export const RecipesPage: React.FC = () => {
       {filteredRecipes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRecipes.map((recipe) => (
-            <div key={recipe.id} className="recipe-card glass-card bg-[#FDFDFD] rounded-2xl overflow-hidden border border-[#E8E3FF] shadow-sm hover:shadow-md transition-shadow relative">
+            <div key={recipe.id} className="recipe-card glass-card bg-surface rounded-2xl overflow-hidden border border-border shadow-sm hover:shadow-md transition-shadow relative">
               <Link to={`/recetas/${recipe.id}`} className="block">
                 <div className="h-48 bg-gradient-to-br from-[#D6BBFB] to-[#6C5CE7] relative">
                   {/* Placeholder for image */}
                   {recipe.ai_generated && (
-                    <div className="absolute top-2 right-2 badge bg-white text-[#6C5CE7] px-2 py-1 rounded-full text-xs font-bold flex items-center shadow">
+                    <div className="absolute top-2 right-2 badge bg-white text-primary px-2 py-1 rounded-full text-xs font-bold flex items-center shadow">
                       <Sparkles size={12} className="mr-1" /> IA
                     </div>
                   )}
@@ -106,27 +106,27 @@ export const RecipesPage: React.FC = () => {
                 </div>
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-[#2D3436] font-poppins">{recipe.name}</h3>
-                    <span className="badge-primary bg-[#EDE9FF] text-[#6C5CE7] px-2 py-1 rounded-md text-xs font-semibold">
+                    <h3 className="font-bold text-lg text-text font-poppins">{recipe.name}</h3>
+                    <span className="badge-primary bg-secondary-light text-primary px-2 py-1 rounded-md text-xs font-semibold">
                       {recipe.category}
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-2 text-sm text-[#636E72] mb-3 font-inter">
+                  <div className="grid grid-cols-2 gap-2 text-sm text-muted mb-3 font-inter">
                     <div>
-                      <span className="block font-semibold text-[#2D3436]">Porciones:</span>
+                      <span className="block font-semibold text-text">Porciones:</span>
                       {recipe.yield_portions}
                     </div>
                     <div>
-                      <span className="block font-semibold text-[#2D3436]">Prep:</span>
+                      <span className="block font-semibold text-text">Prep:</span>
                       {recipe.prep_minutes} min
                     </div>
                     <div>
-                      <span className="block font-semibold text-[#2D3436]">Precio Venta:</span>
+                      <span className="block font-semibold text-text">Precio Venta:</span>
                       ${recipe.sale_price}
                     </div>
                     <div>
-                      <span className="block font-semibold text-[#2D3436]">Molde:</span>
+                      <span className="block font-semibold text-text">Molde:</span>
                       <span className="badge bg-gray-100 px-2 py-0.5 rounded text-xs">{recipe.mold_type}</span>
                     </div>
                   </div>
@@ -136,10 +136,10 @@ export const RecipesPage: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="empty-state flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-[#E8E3FF]">
-          <AlertCircle size={48} className="text-[#D6BBFB] mb-4" />
-          <h3 className="text-xl font-bold text-[#2D3436] mb-2 font-poppins">No se encontraron recetas</h3>
-          <p className="text-[#636E72] font-inter">Intenta con otros términos de búsqueda o filtros.</p>
+        <div className="empty-state flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-border">
+          <AlertCircle size={48} className="text-secondary mb-4" />
+          <h3 className="text-xl font-bold text-text mb-2 font-poppins">No se encontraron recetas</h3>
+          <p className="text-muted font-inter">Intenta con otros términos de búsqueda o filtros.</p>
         </div>
       )}
 

@@ -2,20 +2,27 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ShoppingBag, DollarSign, BookOpen, AlertTriangle, Calendar, ChevronRight } from 'lucide-react';
+import { ShoppingBag, DollarSign, BookOpen, AlertTriangle, Calendar, ChevronRight, Activity, Zap, Clock } from 'lucide-react';
 import { KPICard } from '../components/dashboard/KPICard';
 import { RevenueChart } from '../components/dashboard/RevenueChart';
 import { useDataStore } from '../store/useDataStore';
+import { useOperationalIntelligence } from '../hooks/useOperationalIntelligence';
+import { PageHeader } from '../components/ui/PageHeader';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const orders = useDataStore(s => s.orders);
   const recipes = useDataStore(s => s.recipes);
   const ingredients = useDataStore(s => s.ingredients);
+  const { recommendations } = useOperationalIntelligence();
 
   const currentDate = format(new Date(), "EEEE, d 'de' MMMM, yyyy", { locale: es });
 
-  const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'ready').length;
+  const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'ready' || o.status === 'production').length;
+  const delayedOrders = orders.filter(o => o.status === 'pending' && new Date(o.delivery_date!) < new Date());
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
   const lowStockCount = ingredients.filter(i => i.stock <= i.min_stock).length;
 
@@ -30,161 +37,166 @@ export const DashboardPage: React.FC = () => {
     };
   });
 
-
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(value);
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
   };
 
   const upcomingDeliveries = [...orders]
+    .filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
     .sort((a, b) => new Date(a.delivery_date ?? '').getTime() - new Date(b.delivery_date ?? '').getTime())
-    .slice(0, 5);
+    .slice(0, 4);
 
-  const recentOrders = [...orders]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 5);
+  const recentActivity = [
+    { id: 1, text: 'Nuevo pedido MD-10294 de Ana L.', time: 'Hace 10 min' },
+    { id: 2, text: 'Stock bajo: Harina de Trigo (5kg)', time: 'Hace 1 hora', type: 'alert' },
+    { id: 3, text: 'Pedido MD-10290 marcado como Listo', time: 'Hace 2 horas' },
+  ];
 
-  const getStatusBadgeClass = (status: string) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch(status) {
-      case 'pending': return 'status-pending badge badge-warning';
-      case 'production': return 'status-production badge badge-info';
-      case 'ready': return 'status-ready badge badge-primary';
-      case 'delivered': return 'status-delivered badge badge-success';
-      case 'cancelled': return 'status-cancelled badge badge-danger';
-      default: return 'badge';
+      case 'pending': return 'warning';
+      case 'production': return 'info';
+      case 'ready': return 'primary';
+      case 'delivered': return 'success';
+      case 'cancelled': return 'danger';
+      default: return 'default';
     }
   };
 
   const translateStatus = (status: string) => {
-    const statusMap: Record<string, string> = {
-      'pending': 'Pendiente',
-      'production': 'En Producción',
-      'ready': 'Listo',
-      'delivered': 'Entregado',
-      'cancelled': 'Cancelado',
+    const map: Record<string, string> = {
+      'pending': 'Pendiente', 'production': 'En Producción',
+      'ready': 'Listo', 'delivered': 'Entregado', 'cancelled': 'Cancelado',
     };
-    return statusMap[status] || status;
+    return map[status] || status;
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto bg-[#F4F3FF] min-h-screen">
-      <header className="page-header mb-8">
-        <h1 className="page-title text-3xl font-bold text-[#2D3436] font-poppins">Dashboard</h1>
-        <p className="page-subtitle text-[#636E72] capitalize font-inter mt-1">{currentDate}</p>
-      </header>
+    <div className="max-w-7xl mx-auto min-h-screen pb-12">
+      <PageHeader 
+        title="Centro de Operaciones" 
+        description={currentDate.charAt(0).toUpperCase() + currentDate.slice(1)}
+        primaryAction={<Button onClick={() => navigate('/pedidos')} leftIcon={<ShoppingBag size={18} />}>Ver Pedidos</Button>}
+        secondaryAction={<Button variant="outline" onClick={() => navigate('/cotizador')} leftIcon={<Zap size={18} />}>Cotizar Rápido</Button>}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <KPICard
-          title="Pedidos Activos"
-          value={activeOrdersCount}
-          icon={ShoppingBag}
-          trend={12.5}
-          trendLabel="vs mes anterior"
-          onClick={() => navigate('/pedidos')}
-          color="#6C5CE7"
-        />
-        <KPICard
-          title="Facturado este mes"
-          value={formatCurrency(totalRevenue)}
-          icon={DollarSign}
-          trend={8.2}
-          trendLabel="vs mes anterior"
-          onClick={() => navigate('/pedidos/bitacora')}
-          color="#4834D4"
-        />
-        <KPICard
-          title="Recetas Totales"
-          value={recipes.length}
-          icon={BookOpen}
-          trend={3.1}
-          trendLabel="nuevas este mes"
-          onClick={() => navigate('/recetas')}
-          color="#D6BBFB"
-        />
-        <KPICard
-          title="Stock Bajo"
-          value={lowStockCount}
-          icon={AlertTriangle}
-          trend={-5.0}
-          trendLabel="items críticos"
-          onClick={() => navigate('/inventario?filter=low_stock')}
-          color="#FF7675"
-        />
-      </div>
+      {/* Resumen */}
+      <section className="mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <KPICard title="Pedidos Activos" value={activeOrdersCount} icon={ShoppingBag} trend={12.5} trendLabel="vs mes anterior" onClick={() => navigate('/pedidos')} color="var(--color-primary)" />
+          <KPICard title="Facturado este mes" value={formatCurrency(totalRevenue)} icon={DollarSign} trend={8.2} trendLabel="vs mes anterior" onClick={() => navigate('/pedidos/bitacora')} color="var(--color-primary-dark)" />
+          <KPICard title="Recetas" value={recipes.length} icon={BookOpen} trend={3.1} trendLabel="nuevas este mes" onClick={() => navigate('/recetas')} color="var(--color-secondary)" />
+          <KPICard title="Stock Crítico" value={lowStockCount} icon={AlertTriangle} trend={-5.0} trendLabel="items bajos" onClick={() => navigate('/inventario?filter=low_stock')} color="#EF4444" />
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 glass-card bg-[#FDFDFD] p-6 rounded-[1rem] shadow-sm border border-[#E8E3FF]">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#2D3436] font-poppins">Ingresos y Pedidos</h2>
-          </div>
-          <RevenueChart data={mockRevenueData} />
+        {/* Gráfico */}
+        <div className="lg:col-span-2">
+          <Card variant="glass" className="p-6 h-full flex flex-col">
+            <h2 className="text-xl font-bold text-text font-poppins mb-6">Ingresos y Volumen</h2>
+            <div className="flex-1 min-h-[300px]">
+              <RevenueChart data={mockRevenueData} />
+            </div>
+          </Card>
         </div>
 
-        <div className="glass-card bg-[#FDFDFD] p-6 rounded-[1rem] shadow-sm border border-[#E8E3FF]">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#2D3436] font-poppins">Próximas Entregas</h2>
+        {/* Atención Requerida */}
+        <div className="space-y-6">
+          <Card variant="solid" className="p-6 border-l-4 border-l-danger">
+            <h2 className="text-lg font-bold text-text font-poppins mb-4 flex items-center gap-2">
+              <AlertTriangle className="text-danger" size={20} /> Atención Requerida
+            </h2>
+            <div className="space-y-3">
+              {delayedOrders.length > 0 && (
+                <div className="flex justify-between items-center bg-danger/5 p-3 rounded-xl border border-danger/20">
+                  <span className="text-sm font-medium text-danger-dark">{delayedOrders.length} pedidos atrasados</span>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/pedidos')}>Revisar</Button>
+                </div>
+              )}
+              {lowStockCount > 0 && (
+                <div className="flex justify-between items-center bg-warning/10 p-3 rounded-xl border border-warning/20">
+                  <span className="text-sm font-medium text-warning-dark">{lowStockCount} insumos críticos</span>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/inventario')}>Comprar</Button>
+                </div>
+              )}
+              {delayedOrders.length === 0 && lowStockCount === 0 && (
+                <p className="text-sm text-muted">Todo está en orden.</p>
+              )}
+            </div>
+          </Card>
+
+          <Card variant="glass" className="p-6">
+            <h2 className="text-lg font-bold text-text font-poppins mb-4 flex items-center gap-2">
+              <Activity className="text-primary" size={20} /> Actividad Reciente
+            </h2>
+            <div className="space-y-4">
+              {recentActivity.map(act => (
+                <div key={act.id} className="flex gap-3">
+                  <div className="mt-0.5">
+                    {act.type === 'alert' ? <AlertTriangle size={16} className="text-warning" /> : <Clock size={16} className="text-muted" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text">{act.text}</p>
+                    <p className="text-xs text-muted mt-0.5">{act.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Próximas Entregas */}
+        <Card variant="solid" className="overflow-hidden flex flex-col">
+          <div className="p-6 border-b border-border flex justify-between items-center">
+            <h2 className="text-xl font-bold text-text font-poppins flex items-center gap-2">
+              <Calendar className="text-secondary" size={20} /> Próximas Entregas
+            </h2>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/pedidos')} rightIcon={<ChevronRight size={16} />}>
+              Ver agenda
+            </Button>
           </div>
-          <div className="space-y-4">
+          <div className="p-2 flex-1">
             {upcomingDeliveries.map((order) => (
-              <div key={order.id} className="flex items-center p-3 rounded-xl hover:bg-[#F4F3FF] transition-colors cursor-pointer border border-transparent hover:border-[#E8E3FF]">
-                <div className="p-3 bg-[#EDE9FF] rounded-lg text-[#6C5CE7] mr-4">
-                  <Calendar size={20} />
+              <div key={order.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-bg transition-colors cursor-pointer group">
+                <div>
+                  <h4 className="font-semibold text-text font-inter">{order.customer_name}</h4>
+                  <p className="text-sm text-muted font-inter mt-1">{order.delivery_date ? format(new Date(order.delivery_date), "EEEE d 'a las' h:mm a", { locale: es }) : '—'}</p>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-[#2D3436] font-inter">{order.customer_name}</h4>
-                  <p className="text-sm text-[#636E72] font-inter">{order.delivery_date ? format(new Date(order.delivery_date), "MMM d, h:mm a") : '—'}</p>
-                </div>
-                <ChevronRight size={16} className="text-[#636E72]" />
+                <Badge variant={getStatusBadgeVariant(order.status) as any}>{translateStatus(order.status)}</Badge>
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </Card>
 
-      <div className="glass-card bg-[#FDFDFD] rounded-[1rem] shadow-sm border border-[#E8E3FF] overflow-hidden">
-        <div className="p-6 border-b border-[#E8E3FF] flex justify-between items-center">
-          <h2 className="text-xl font-bold text-[#2D3436] font-poppins">Órdenes Recientes</h2>
-          <button 
-            onClick={() => navigate('/pedidos')}
-            className="text-sm font-medium text-[#6C5CE7] hover:text-[#4834D4] flex items-center font-inter transition"
-          >
-            Ver todas <ChevronRight size={16} className="ml-1" />
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="marea-table w-full text-left border-collapse font-inter">
-            <thead>
-              <tr className="bg-[#F4F3FF] text-[#636E72] text-sm uppercase tracking-wider">
-                <th className="p-4 font-medium">ID Pedido</th>
-                <th className="p-4 font-medium">Cliente</th>
-                <th className="p-4 font-medium">Fecha Entrega</th>
-                <th className="p-4 font-medium">Total</th>
-                <th className="p-4 font-medium">Estado</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E8E3FF]">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-[#F4F3FF] transition-colors">
-                  <td className="p-4 font-medium text-[#2D3436]">{order.id}</td>
-                  <td className="p-4 text-[#2D3436]">{order.customer_name}</td>
-                  <td className="p-4 text-[#636E72]">
-                    {order.delivery_date ? format(new Date(order.delivery_date), "MMM d, yyyy") : '—'}
-                  </td>
-                  <td className="p-4 font-medium text-[#2D3436]">
-                    {formatCurrency(order.total)}
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium status-pill ${getStatusBadgeClass(order.status)}`}>
-                      {translateStatus(order.status)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Recomendaciones (IA Ready) */}
+        <Card variant="glass" className="p-6 bg-gradient-to-br from-bg to-secondary-light/30 border-secondary/30 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <h2 className="text-xl font-bold text-text font-poppins mb-2 flex items-center gap-2">
+            <Zap className="text-primary" size={20} /> Sugerencias Inteligentes
+          </h2>
+          <p className="text-sm text-muted mb-6">Marea procesa tus datos operativos para darte recomendaciones.</p>
+          
+          <div className="space-y-3">
+            {recommendations.length > 0 ? (
+              recommendations.map(rec => (
+                <div key={rec.id} className="bg-white/80 p-4 rounded-xl border border-white/50 shadow-sm relative overflow-hidden">
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${rec.type === 'production' ? 'bg-danger' : rec.type === 'inventory' ? 'bg-warning' : 'bg-success'}`} />
+                  <p className="text-sm font-bold text-text flex items-center gap-2">{rec.title}</p>
+                  <p className="text-xs font-medium text-text mt-2">{rec.evidence}</p>
+                  <p className="text-xs text-muted mt-2"><strong className="text-text">Acción sugerida:</strong> {rec.action}</p>
+                  <p className="text-xs text-primary-dark mt-1 font-medium">{rec.impact}</p>
+                </div>
+              ))
+            ) : (
+              <div className="bg-white/60 p-4 rounded-xl border border-white text-center">
+                <p className="text-sm text-muted">Todo opera con normalidad. Sigue así.</p>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
     </div>
   );

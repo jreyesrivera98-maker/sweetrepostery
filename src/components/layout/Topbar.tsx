@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Share2, Bell, ChevronDown, LogOut, Settings, X } from 'lucide-react';
+import { Search, Share2, Bell, ChevronDown, LogOut, Settings, X, Plus, Package, Users, FileText, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -17,6 +17,7 @@ export const Topbar: React.FC = () => {
   const { setShareCatalogOpen, shareCatalogOpen, mobileSearchOpen, setMobileSearchOpen } = useAppStore();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
@@ -64,6 +65,51 @@ export const Topbar: React.FC = () => {
             <Share2 size={16} />
             <span className="text-sm font-medium">Catálogo</span>
           </button>
+
+          {/* Create Dropdown */}
+          <div className="relative ml-1 hidden md:block">
+            <button
+              onClick={() => setCreateMenuOpen(!createMenuOpen)}
+              className="btn-primary flex items-center gap-2 px-3 py-1.5"
+              title="Crear Nuevo"
+            >
+              <Plus size={16} />
+              <span className="text-sm font-medium">Crear</span>
+              <ChevronDown size={14} />
+            </button>
+            {createMenuOpen && (
+              <div className="absolute top-[calc(100%+0.5rem)] right-0 bg-white border border-border rounded-2xl shadow-xl min-w-[200px] z-50 overflow-hidden animate-[slideUp_0.2s_ease]">
+                <button
+                  onClick={() => { navigate('/pedidos?new=true'); setCreateMenuOpen(false); }}
+                  className="flex items-center gap-3 w-full p-3 text-sm text-text font-medium hover:bg-bg transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><Package size={16} /></div>
+                  Nuevo Pedido
+                </button>
+                <button
+                  onClick={() => { navigate('/clientes?new=true'); setCreateMenuOpen(false); }}
+                  className="flex items-center gap-3 w-full p-3 text-sm text-text font-medium hover:bg-bg transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><Users size={16} /></div>
+                  Nuevo Cliente
+                </button>
+                <button
+                  onClick={() => { navigate('/recetas/nueva'); setCreateMenuOpen(false); }}
+                  className="flex items-center gap-3 w-full p-3 text-sm text-text font-medium hover:bg-bg transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><FileText size={16} /></div>
+                  Nueva Receta
+                </button>
+                <button
+                  onClick={() => { navigate('/cotizador'); setCreateMenuOpen(false); }}
+                  className="flex items-center gap-3 w-full p-3 text-sm text-text font-medium hover:bg-bg transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><Calculator size={16} /></div>
+                  Nueva Cotización
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Notifications */}
           <button

@@ -34,7 +34,7 @@ export const KDSMode: React.FC<KDSModeProps> = ({ recipe, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#2D3436] z-50 flex flex-col text-white">
+    <div className="fixed inset-0 bg-text z-50 flex flex-col text-white">
       {/* Header */}
       <div className="flex justify-between items-center p-6 border-b border-gray-700">
         <h2 className="text-2xl font-bold font-poppins">{recipe.name}</h2>
@@ -51,7 +51,7 @@ export const KDSMode: React.FC<KDSModeProps> = ({ recipe, onClose }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-10 relative">
-        <div className="text-[#D6BBFB] font-bold text-xl mb-8">
+        <div className="text-secondary font-bold text-xl mb-8">
           Paso {currentStep + 1} de {steps.length}
         </div>
         
@@ -62,7 +62,7 @@ export const KDSMode: React.FC<KDSModeProps> = ({ recipe, onClose }) => {
         {/* Timer Section */}
         <div className="mt-16 flex flex-col items-center">
           {timeLeft !== null && timeLeft > 0 ? (
-            <div className="text-6xl font-mono text-[#6C5CE7] font-bold bg-white px-8 py-4 rounded-2xl shadow-lg">
+            <div className="text-6xl font-mono text-primary font-bold bg-white px-8 py-4 rounded-2xl shadow-lg">
               {formatTime(timeLeft)}
             </div>
           ) : (
@@ -89,7 +89,7 @@ export const KDSMode: React.FC<KDSModeProps> = ({ recipe, onClose }) => {
         <button 
           onClick={nextStep} 
           disabled={currentStep === steps.length - 1}
-          className="px-8 py-4 bg-[#6C5CE7] text-white rounded-xl text-xl font-bold disabled:opacity-50 flex items-center hover:bg-[#4834D4]"
+          className="px-8 py-4 bg-primary text-white rounded-xl text-xl font-bold disabled:opacity-50 flex items-center hover:bg-primary-dark"
         >
           Siguiente <ChevronRight size={28} className="ml-2" />
         </button>

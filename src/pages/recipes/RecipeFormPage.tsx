@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Save, Circle, Square, Minus } from 'lucide-react';
+import { Save, Circle, Square, Minus, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
 import { MareaRecipeAi } from '../../components/recipes/MareaRecipeAi';
 import { useDataStore } from '../../store/useDataStore';
 import type { Recipe } from '../../types';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { Card } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Textarea } from '../../components/ui/Textarea';
+import { Button } from '../../components/ui/Button';
 
 export const RecipeFormPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -23,6 +29,8 @@ export const RecipeFormPage: React.FC = () => {
   const [steps, setSteps] = useState('');
   const [margin, setMargin] = useState(60);
   const [ingredients, setIngredients] = useState([{ name: '', quantity: '', unit: '', package_cost: '', package_quantity: '' }]);
+
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const addIngredient = () => setIngredients([...ingredients, { name: '', quantity: '', unit: '', package_cost: '', package_quantity: '' }]);
   const removeIngredient = (index: number) => setIngredients(ingredients.filter((_, i) => i !== index));
@@ -57,46 +65,36 @@ export const RecipeFormPage: React.FC = () => {
     }
   };
 
+  const handleSave = () => {
+    if (!name) return;
+    const recipe: Recipe = {
+      id: Math.random().toString(36).substr(2, 9),
+      name, description, category,
+      yield_portions: parseInt(yieldPortions) || 1,
+      prep_minutes: parseInt(prepMinutes) || 0,
+      image_url: null as any, steps, margin_percent: margin, sale_price: salePrice, published: true,
+      mold_type: moldType as any,
+      mold_dimensions: moldType === 'circular' ? { diameter: parseInt(moldDiameter) || 0 } : moldType === 'rectangular' ? { width: parseInt(moldWidth) || 0, height: parseInt(moldHeight) || 0 } : {},
+      items: ingredients.map(ing => ({
+        ingredient_id: Math.random().toString(),
+        ingredient_name: ing.name,
+        quantity: parseFloat(ing.quantity) || 0, unit: ing.unit,
+        cost_per_unit: (parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1),
+        total_cost: (parseFloat(ing.quantity) || 0) * ((parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1))
+      })),
+      ai_generated: isAiMode,
+      created_at: new Date().toISOString()
+    };
+    addRecipe(recipe);
+    navigate('/recetas');
+  };
+
   return (
-    <div className="recipe-form-page max-w-5xl mx-auto pb-12">
-      <div className="page-header mb-6 flex justify-between items-center">
-        <h1 className="page-title text-3xl font-bold font-poppins text-[#2D3436]">
-          Nueva Receta
-        </h1>
-        <button onClick={() => {
-          if (!name) return;
-          const recipe: Recipe = {
-            id: Math.random().toString(36).substr(2, 9),
-            name,
-            description,
-            category,
-            yield_portions: parseInt(yieldPortions) || 1,
-            prep_minutes: parseInt(prepMinutes) || 0,
-            image_url: null as any,
-            steps,
-            margin_percent: margin,
-            sale_price: salePrice,
-            published: true,
-            mold_type: moldType as any,
-            mold_dimensions: moldType === 'circular' ? { diameter: parseInt(moldDiameter) || 0 } : moldType === 'rectangular' ? { width: parseInt(moldWidth) || 0, height: parseInt(moldHeight) || 0 } : {},
-            items: ingredients.map(ing => ({
-              ingredient_id: Math.random().toString(),
-              ingredient_name: ing.name,
-              quantity: parseFloat(ing.quantity) || 0,
-              unit: ing.unit,
-              cost_per_unit: (parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1),
-              total_cost: (parseFloat(ing.quantity) || 0) * ((parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1))
-            })),
-            ai_generated: isAiMode,
-            created_at: new Date().toISOString()
-          };
-          addRecipe(recipe);
-          navigate('/recetas');
-        }} className="btn-primary px-6 py-2 rounded-lg bg-[#6C5CE7] text-white hover:bg-[#4834D4] flex items-center">
-          <Save size={18} className="mr-2" />
-          Guardar Receta
-        </button>
-      </div>
+    <div className="max-w-5xl mx-auto pb-12">
+      <PageHeader 
+        title={isAiMode ? "Asistente IA de Recetas" : "Nueva Receta"}
+        primaryAction={<Button onClick={handleSave} leftIcon={<Save size={18} />}>Guardar Receta</Button>}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -104,187 +102,153 @@ export const RecipeFormPage: React.FC = () => {
             <MareaRecipeAi onRecipeGenerated={handleAiGenerated} />
           )}
 
-          <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm">
-            <h2 className="text-xl font-bold font-poppins text-[#2D3436] mb-4">Información General</h2>
+          <Card className="p-6">
+            <h2 className="text-lg font-poppins font-bold text-text mb-4">Información General</h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#636E72] mb-1">Nombre de la Receta</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-marea w-full p-2 border border-[#E8E3FF] rounded-lg" placeholder="Ej. Torta de Chocolate" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#636E72] mb-1">Descripción</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} className="input-marea w-full p-2 border border-[#E8E3FF] rounded-lg" rows={3}></textarea>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#636E72] mb-1">Categoría</label>
-                  <select value={category} onChange={e => setCategory(e.target.value)} className="input-marea w-full p-2 border border-[#E8E3FF] rounded-lg">
-                    <option value="">Seleccionar...</option>
-                    <option value="Tortas">Tortas</option>
-                    <option value="Postres">Postres</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#636E72] mb-1">Porciones</label>
-                  <input type="number" value={yieldPortions} onChange={e => setYieldPortions(e.target.value)} className="input-marea w-full p-2 border border-[#E8E3FF] rounded-lg" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#636E72] mb-1">Tiempo (min)</label>
-                  <input type="number" value={prepMinutes} onChange={e => setPrepMinutes(e.target.value)} className="input-marea w-full p-2 border border-[#E8E3FF] rounded-lg" />
-                </div>
+              <Input label="Nombre de la Receta *" required value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Torta de Chocolate" />
+              <Textarea label="Descripción" value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Breve descripción del producto..." />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Select 
+                  label="Categoría" 
+                  value={category} 
+                  onChange={e => setCategory(e.target.value as any)}
+                  options={[{ label: 'Seleccionar...', value: '' }, { label: 'Tortas', value: 'Tortas' }, { label: 'Postres', value: 'Postres' }]}
+                />
+                <Input label="Porciones" type="number" value={yieldPortions} onChange={e => setYieldPortions(e.target.value)} />
+                <Input label="Tiempo (min)" type="number" value={prepMinutes} onChange={e => setPrepMinutes(e.target.value)} />
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm">
-            <h2 className="text-xl font-bold font-poppins text-[#2D3436] mb-4">Tipo de Molde</h2>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className={`p-4 rounded-lg border-2 cursor-pointer flex flex-col items-center ${moldType === 'circular' ? 'border-[#6C5CE7] bg-[#EDE9FF]' : 'border-[#E8E3FF]'}`} onClick={() => setMoldType('circular')}>
-                <Circle size={32} className={moldType === 'circular' ? 'text-[#6C5CE7]' : 'text-[#636E72]'} />
-                <span className="mt-2 font-medium">Circular</span>
-              </div>
-              <div className={`p-4 rounded-lg border-2 cursor-pointer flex flex-col items-center ${moldType === 'rectangular' ? 'border-[#6C5CE7] bg-[#EDE9FF]' : 'border-[#E8E3FF]'}`} onClick={() => setMoldType('rectangular')}>
-                <Square size={32} className={moldType === 'rectangular' ? 'text-[#6C5CE7]' : 'text-[#636E72]'} />
-                <span className="mt-2 font-medium">Rectangular</span>
-              </div>
-              <div className={`p-4 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center ${moldType === 'na' ? 'border-[#6C5CE7] bg-[#EDE9FF]' : 'border-[#E8E3FF]'}`} onClick={() => setMoldType('na')}>
-                <span className={`font-bold text-lg ${moldType === 'na' ? 'text-[#6C5CE7]' : 'text-[#636E72]'}`}>N/A</span>
-              </div>
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-poppins font-bold text-text">Ingredientes y Costos</h2>
+              <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded">Costo Unit = $ Paquete / Cant. Paq</span>
             </div>
             
-            {moldType === 'circular' && (
-              <div>
-                <label className="block text-sm font-medium text-[#636E72] mb-1">Diámetro (cm)</label>
-                <input type="number" value={moldDiameter} onChange={e => setMoldDiameter(e.target.value)} className="input-marea p-2 border border-[#E8E3FF] rounded-lg w-full md:w-1/3" />
-              </div>
-            )}
-            {moldType === 'rectangular' && (
-              <div className="flex space-x-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#636E72] mb-1">Ancho (cm)</label>
-                  <input type="number" value={moldWidth} onChange={e => setMoldWidth(e.target.value)} className="input-marea p-2 border border-[#E8E3FF] rounded-lg w-full" />
+            <div className="space-y-4">
+              {ingredients.map((ing, idx) => (
+                <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-border relative group">
+                  <button onClick={() => removeIngredient(idx)} className="absolute -top-2 -right-2 bg-white border border-danger text-danger p-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Minus size={14} />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div className="md:col-span-4">
+                      <Input placeholder="Ingrediente" value={ing.name} onChange={e => { const newI = [...ingredients]; newI[idx].name = e.target.value; setIngredients(newI); }} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Input type="number" placeholder="Cant." value={ing.quantity} onChange={e => { const newI = [...ingredients]; newI[idx].quantity = e.target.value; setIngredients(newI); }} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Input placeholder="Unidad" value={ing.unit} onChange={e => { const newI = [...ingredients]; newI[idx].unit = e.target.value; setIngredients(newI); }} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Input type="number" placeholder="$ Paq." value={ing.package_cost} onChange={e => { const newI = [...ingredients]; newI[idx].package_cost = e.target.value; setIngredients(newI); }} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Input type="number" placeholder="Cant. Paq." value={ing.package_quantity} onChange={e => { const newI = [...ingredients]; newI[idx].package_quantity = e.target.value; setIngredients(newI); }} />
+                    </div>
+                  </div>
+                  <div className="text-right text-sm font-semibold text-primary mt-2">
+                    Subtotal: ${ ((parseFloat(ing.quantity)||0) * ((parseFloat(ing.package_cost)||0) / (parseFloat(ing.package_quantity)||1))).toFixed(2) }
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#636E72] mb-1">Largo (cm)</label>
-                  <input type="number" value={moldHeight} onChange={e => setMoldHeight(e.target.value)} className="input-marea p-2 border border-[#E8E3FF] rounded-lg w-full" />
-                </div>
+              ))}
+              <Button variant="ghost" onClick={addIngredient} size="sm">
+                + Agregar Ingrediente
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-lg font-poppins font-bold text-text mb-4">Instrucciones (Pasos)</h2>
+            <Textarea value={steps} onChange={e => setSteps(e.target.value)} rows={6} placeholder="1. Precalentar horno a 180°C...&#10;2. Mezclar secos..." />
+          </Card>
+          
+          {/* Opciones Avanzadas (Progressive Disclosure) */}
+          <div className="mt-8">
+            <button 
+              onClick={() => setShowAdvanced(!showAdvanced)} 
+              className="flex items-center gap-2 text-sm font-medium text-muted hover:text-primary transition-colors"
+            >
+              <Settings2 size={16} /> 
+              {showAdvanced ? 'Ocultar Opciones Avanzadas' : 'Mostrar Opciones Avanzadas'}
+              {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            
+            {showAdvanced && (
+              <div className="mt-4 space-y-6 animate-[slideUp_0.3s_ease]">
+                <Card className="p-6 border-secondary">
+                  <h2 className="text-lg font-poppins font-bold text-text mb-4">Configuración del Molde</h2>
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className={`p-4 rounded-xl border-2 cursor-pointer flex flex-col items-center transition-all ${moldType === 'circular' ? 'border-primary bg-secondary-light/50' : 'border-border hover:border-secondary'}`} onClick={() => setMoldType('circular')}>
+                      <Circle size={28} className={moldType === 'circular' ? 'text-primary' : 'text-muted'} />
+                      <span className="mt-2 text-sm font-medium">Circular</span>
+                    </div>
+                    <div className={`p-4 rounded-xl border-2 cursor-pointer flex flex-col items-center transition-all ${moldType === 'rectangular' ? 'border-primary bg-secondary-light/50' : 'border-border hover:border-secondary'}`} onClick={() => setMoldType('rectangular')}>
+                      <Square size={28} className={moldType === 'rectangular' ? 'text-primary' : 'text-muted'} />
+                      <span className="mt-2 text-sm font-medium">Rectangular</span>
+                    </div>
+                    <div className={`p-4 rounded-xl border-2 cursor-pointer flex flex-col items-center justify-center transition-all ${moldType === 'na' ? 'border-primary bg-secondary-light/50' : 'border-border hover:border-secondary'}`} onClick={() => setMoldType('na')}>
+                      <span className={`font-bold ${moldType === 'na' ? 'text-primary' : 'text-muted'}`}>N/A</span>
+                      <span className="mt-2 text-sm font-medium text-muted">A granel</span>
+                    </div>
+                  </div>
+                  
+                  {moldType === 'circular' && (
+                    <Input label="Diámetro (cm)" type="number" value={moldDiameter} onChange={e => setMoldDiameter(e.target.value)} className="w-1/3" />
+                  )}
+                  {moldType === 'rectangular' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input label="Ancho (cm)" type="number" value={moldWidth} onChange={e => setMoldWidth(e.target.value)} />
+                      <Input label="Largo (cm)" type="number" value={moldHeight} onChange={e => setMoldHeight(e.target.value)} />
+                    </div>
+                  )}
+                </Card>
               </div>
-            )}
-            {moldType === 'na' && (
-              <p className="text-sm text-[#636E72] bg-gray-50 p-3 rounded-lg">Escalado por cantidad de porciones</p>
             )}
           </div>
 
-          <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold font-poppins text-[#2D3436]">Ingredientes y Costos</h2>
-              <p className="text-xs text-[#636E72] bg-gray-50 p-2 rounded">Costo Unit = Precio Paq / Cant. Paq</p>
-            </div>
-            <div className="space-y-4">
-              {ingredients.map((ing, idx) => (
-                <div key={idx} className="flex gap-2 items-start border-b border-gray-100 pb-4">
-                  <div className="flex-1">
-                    <input type="text" placeholder="Ingrediente" value={ing.name} onChange={e => { const newI = [...ingredients]; newI[idx].name = e.target.value; setIngredients(newI); }} className="w-full p-2 border rounded-lg text-sm mb-2" />
-                    <div className="flex gap-2">
-                      <input type="number" placeholder="Cant." value={ing.quantity} onChange={e => { const newI = [...ingredients]; newI[idx].quantity = e.target.value; setIngredients(newI); }} className="w-1/3 p-2 border rounded-lg text-sm" />
-                      <input type="text" placeholder="Unidad" value={ing.unit} onChange={e => { const newI = [...ingredients]; newI[idx].unit = e.target.value; setIngredients(newI); }} className="w-1/3 p-2 border rounded-lg text-sm" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex gap-2 mb-2">
-                      <input type="number" placeholder="$ Paquete" value={ing.package_cost} onChange={e => { const newI = [...ingredients]; newI[idx].package_cost = e.target.value; setIngredients(newI); }} className="w-1/2 p-2 border rounded-lg text-sm" />
-                      <input type="number" placeholder="Cant. Paquete" value={ing.package_quantity} onChange={e => { const newI = [...ingredients]; newI[idx].package_quantity = e.target.value; setIngredients(newI); }} className="w-1/2 p-2 border rounded-lg text-sm" />
-                    </div>
-                    <div className="text-right text-sm font-semibold text-[#6C5CE7]">
-                      Subtotal: ${ ((parseFloat(ing.quantity)||0) * ((parseFloat(ing.package_cost)||0) / (parseFloat(ing.package_quantity)||1))).toFixed(2) }
-                    </div>
-                  </div>
-                  <button onClick={() => removeIngredient(idx)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                    <Minus size={20} />
-                  </button>
-                </div>
-              ))}
-              <button onClick={addIngredient} className="text-[#6C5CE7] text-sm font-semibold hover:underline">+ Agregar Ingrediente</button>
-            </div>
-          </div>
-          
-          <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm">
-            <h2 className="text-xl font-bold font-poppins text-[#2D3436] mb-4">Instrucciones (Pasos)</h2>
-            <textarea value={steps} onChange={e => setSteps(e.target.value)} className="w-full p-4 border border-[#E8E3FF] rounded-lg h-48 font-inter text-sm" placeholder="1. Precalentar horno...&#10;2. Mezclar..."></textarea>
-          </div>
         </div>
 
         <div className="lg:col-span-1">
-          <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm sticky top-6">
-            <h3 className="text-lg font-bold font-poppins text-[#2D3436] mb-4">Resumen de Precios</h3>
+          <Card className="p-6 sticky top-24 bg-gradient-to-b from-white to-bg border-secondary/20">
+            <h3 className="text-lg font-bold font-poppins text-text mb-6">Fijación de Precio</h3>
             
-            <div className="space-y-4 mb-6">
-              <div className="flex justify-between">
-                <span className="text-[#636E72]">Costo Ingredientes:</span>
-                <span className="font-bold">${totalCost.toFixed(2)}</span>
+            <div className="space-y-6 mb-6">
+              <div className="flex justify-between items-center p-3 bg-white rounded-lg border border-border">
+                <span className="text-sm font-medium text-muted">Costo Insumos:</span>
+                <span className="font-bold text-text">${totalCost.toFixed(2)}</span>
               </div>
               
               <div>
-                <label className="flex justify-between text-sm mb-1">
-                  <span className="text-[#636E72]">Margen de Ganancia:</span>
-                  <span className="font-bold text-[#6C5CE7]">{margin}%</span>
+                <label className="flex justify-between text-sm mb-2">
+                  <span className="font-medium text-muted">Margen de Ganancia:</span>
+                  <span className="font-bold text-primary bg-primary/10 px-2 rounded">{margin}%</span>
                 </label>
                 <input 
-                  type="range" 
-                  min="30" 
-                  max="80" 
-                  value={margin} 
-                  onChange={(e) => setMargin(Number(e.target.value))}
-                  className="w-full accent-[#6C5CE7]"
+                  type="range" min="30" max="80" 
+                  value={margin} onChange={(e) => setMargin(Number(e.target.value))}
+                  className="w-full accent-primary h-2 bg-border rounded-lg appearance-none cursor-pointer"
                 />
+                <div className="flex justify-between text-xs text-muted mt-1">
+                  <span>30%</span><span>55%</span><span>80%</span>
+                </div>
               </div>
               
-              <div className="pt-4 border-t border-[#E8E3FF]">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-[#2D3436]">Precio de Venta Sugerido:</span>
-                  <span className="text-2xl font-bold text-[#6C5CE7]">${salePrice.toFixed(2)}</span>
+              <div className="pt-6 border-t border-border">
+                <div className="flex flex-col gap-1 items-center justify-center p-4 bg-primary/5 rounded-xl border border-primary/20">
+                  <span className="font-medium text-sm text-primary-dark">Precio de Venta Sugerido</span>
+                  <span className="text-3xl font-bold text-primary">${salePrice.toFixed(2)}</span>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-2 mb-6">
-              <input type="checkbox" id="published" className="w-4 h-4 text-[#6C5CE7] rounded focus:ring-[#6C5CE7]" />
-              <label htmlFor="published" className="text-sm font-medium text-[#2D3436]">Publicar receta inmediatamente</label>
-            </div>
-            
-            <button onClick={() => {
-              if (!name) return;
-              const recipe: Recipe = {
-                id: Math.random().toString(36).substr(2, 9),
-                name,
-                description,
-                category,
-                yield_portions: parseInt(yieldPortions) || 1,
-                prep_minutes: parseInt(prepMinutes) || 0,
-                image_url: null as any,
-                steps,
-                margin_percent: margin,
-                sale_price: salePrice,
-                published: true,
-                mold_type: moldType as any,
-                mold_dimensions: moldType === 'circular' ? { diameter: parseInt(moldDiameter) || 0 } : moldType === 'rectangular' ? { width: parseInt(moldWidth) || 0, height: parseInt(moldHeight) || 0 } : {},
-                items: ingredients.map(ing => ({
-                  ingredient_id: Math.random().toString(),
-                  ingredient_name: ing.name,
-                  quantity: parseFloat(ing.quantity) || 0,
-                  unit: ing.unit,
-                  cost_per_unit: (parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1),
-                  total_cost: (parseFloat(ing.quantity) || 0) * ((parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1))
-                })),
-                ai_generated: isAiMode,
-                created_at: new Date().toISOString()
-              };
-              addRecipe(recipe);
-              navigate('/recetas');
-            }} className="w-full btn-primary py-3 rounded-lg bg-[#6C5CE7] text-white font-bold hover:bg-[#4834D4]">
+            <Button onClick={handleSave} variant="primary" fullWidth size="lg" className="shadow-lg shadow-primary/30">
               Guardar Receta
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       </div>
     </div>

@@ -37,12 +37,12 @@ export const MareaRecipeAi: React.FC<MareaRecipeAiProps> = ({ onRecipeGenerated 
   };
 
   return (
-    <div className="ai-panel bg-gradient-to-r from-[#F4F3FF] to-[#EDE9FF] rounded-2xl p-6 border border-[#D6BBFB] shadow-sm mb-6">
-      <h3 className="font-bold text-[#4834D4] mb-2 flex items-center text-lg">
+    <div className="ai-panel bg-gradient-to-r from-bg to-[#EDE9FF] rounded-2xl p-6 border border-secondary shadow-sm mb-6">
+      <h3 className="font-bold text-primary-dark mb-2 flex items-center text-lg">
         <Wand2 size={20} className="mr-2" />
         Generador de Recetas con IA
       </h3>
-      <p className="text-sm text-[#636E72] mb-4">
+      <p className="text-sm text-muted mb-4">
         Describe la receta que tienes en mente y Marea Dulce creará la fórmula base para ti.
       </p>
 
@@ -55,7 +55,7 @@ export const MareaRecipeAi: React.FC<MareaRecipeAiProps> = ({ onRecipeGenerated 
       <textarea
         value={idea}
         onChange={e => setIdea(e.target.value)}
-        className="w-full p-3 border border-[#D6BBFB] rounded-xl mb-4 bg-white/80 focus:bg-white transition-colors"
+        className="w-full p-3 border border-secondary rounded-xl mb-4 bg-white/80 focus:bg-white transition-colors"
         rows={3}
         placeholder="Ej: Torta húmeda de pistacho con chocolate blanco y relleno de frambuesa"
       />
@@ -99,7 +99,7 @@ export const MareaRecipeAi: React.FC<MareaRecipeAiProps> = ({ onRecipeGenerated 
       <button
         onClick={handleGenerate}
         disabled={loading || !idea.trim()}
-        className="btn-primary w-full py-2 rounded-xl bg-[#6C5CE7] text-white font-semibold hover:bg-[#4834D4] disabled:opacity-50 flex items-center justify-center"
+        className="btn-primary w-full py-2 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark disabled:opacity-50 flex items-center justify-center"
       >
         {loading ? (
           <><Sparkles className="animate-spin mr-2" size={18} /> Generando con IA...</>

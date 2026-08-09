@@ -26,11 +26,11 @@ export const KPICard: React.FC<KPICardProps> = ({
 
   return (
     <div 
-      className={`kpi-card glass-card p-6 rounded-[1rem] bg-[#FDFDFD] shadow-sm border border-[#E8E3FF] transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''}`}
+      className={`kpi-card glass-card p-6 rounded-[1rem] bg-surface shadow-sm border border-border transition-all duration-300 hover:shadow-md hover:-translate-y-1 ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-[#636E72] font-inter">{title}</h3>
+        <h3 className="text-sm font-medium text-muted font-inter">{title}</h3>
         <div 
           className="p-2 rounded-full"
           style={{ backgroundColor: `${color}15`, color: color }}
@@ -39,7 +39,7 @@ export const KPICard: React.FC<KPICardProps> = ({
         </div>
       </div>
       <div className="flex items-baseline space-x-2">
-        <h2 className="text-3xl font-bold text-[#2D3436] font-poppins">{value}</h2>
+        <h2 className="text-3xl font-bold text-text font-poppins">{value}</h2>
         {trend !== undefined && (
           <div className={`flex items-center text-sm font-medium ${isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-gray-500'}`}>
             {isPositive ? <ArrowUpRight size={16} /> : isNegative ? <ArrowDownRight size={16} /> : null}
@@ -48,7 +48,7 @@ export const KPICard: React.FC<KPICardProps> = ({
         )}
       </div>
       {trendLabel && (
-        <p className="text-xs text-[#636E72] mt-2 font-inter">{trendLabel}</p>
+        <p className="text-xs text-muted mt-2 font-inter">{trendLabel}</p>
       )}
     </div>
   );

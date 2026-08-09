@@ -227,33 +227,33 @@ export const InventoryPage: React.FC = () => {
           <tbody>
             {filteredIngredients.map(ing => (
               <tr key={ing.id} className={ing.stock < ing.min_stock ? 'low-stock-row' : ''}>
-                <td>
+                <td data-label="Insumo">
                   <div style={{ fontWeight: 600 }}>{ing.name}</div>
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
                     <span className="badge badge-primary" style={{ fontSize: '0.65rem' }}>{ing.category}</span>
                     <span style={{ fontSize: '0.72rem', color: '#636E72' }}>{ing.unit}</span>
                   </div>
                 </td>
-                <td>
-                  <input type="number" value={ing.package_cost || 0} onChange={e => handleUpdateIngredient(ing.id, 'package_cost', Number(e.target.value))} className="input-marea" style={{ width: '80px', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} />
+                <td data-label="Precio Paquete ($)">
+                  <input type="number" value={ing.package_cost || 0} onChange={e => handleUpdateIngredient(ing.id, 'package_cost', Number(e.target.value))} className="input-marea min-h-[44px]" style={{ width: '80px', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} />
                 </td>
-                <td>
+                <td data-label="Cant. Paquete">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <input type="number" value={ing.package_quantity || 1} onChange={e => handleUpdateIngredient(ing.id, 'package_quantity', Number(e.target.value))} className="input-marea" style={{ width: '70px', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} />
+                    <input type="number" value={ing.package_quantity || 1} onChange={e => handleUpdateIngredient(ing.id, 'package_quantity', Number(e.target.value))} className="input-marea min-h-[44px]" style={{ width: '70px', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }} />
                     <span style={{ fontSize: '0.72rem', color: '#636E72' }}>{ing.unit}</span>
                   </div>
                 </td>
-                <td style={{ background: '#F4F3FF', fontWeight: 700, color: '#6C5CE7' }}>
+                <td data-label="Costo/Unidad" style={{ background: '#F4F3FF', fontWeight: 700, color: '#6C5CE7' }}>
                   ${(ing.package_cost / (ing.package_quantity || 1)).toFixed(4)}
                 </td>
-                <td>
+                <td data-label="Stock Actual">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                    <input type="number" value={ing.stock} onChange={e => handleUpdateIngredient(ing.id, 'stock', Number(e.target.value))} className="input-marea" style={{ width: '70px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: ing.stock < ing.min_stock ? '#FEB2B2' : undefined, color: ing.stock < ing.min_stock ? '#C53030' : undefined }} />
+                    <input type="number" value={ing.stock} onChange={e => handleUpdateIngredient(ing.id, 'stock', Number(e.target.value))} className="input-marea min-h-[44px]" style={{ width: '70px', padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: ing.stock < ing.min_stock ? '#FEB2B2' : undefined, color: ing.stock < ing.min_stock ? '#C53030' : undefined }} />
                     {ing.stock < ing.min_stock && <AlertCircle size={14} style={{ color: '#E74C3C' }} />}
                   </div>
                 </td>
-                <td style={{ color: '#636E72', fontSize: '0.875rem' }}>{ing.min_stock} {ing.unit}</td>
-                <td>
+                <td data-label="Stock Mín." style={{ color: '#636E72', fontSize: '0.875rem' }}>{ing.min_stock} {ing.unit}</td>
+                <td data-label="Estado">
                   {ing.stock === 0 ? (
                     <span className="badge badge-danger">Agotado</span>
                   ) : ing.stock <= ing.min_stock ? (
@@ -262,10 +262,10 @@ export const InventoryPage: React.FC = () => {
                     <span className="badge badge-success">Óptimo</span>
                   )}
                 </td>
-                <td>
+                <td className="actions-cell">
                   <div style={{ display: 'flex', gap: '0.375rem' }}>
-                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7' }} onClick={() => openEdit(ing)} title="Editar insumo"><Edit2 size={13} /></button>
-                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C' }} onClick={() => setDeleteId(ing.id)} title="Eliminar insumo"><Trash2 size={13} /></button>
+                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#EDE9FF', border: 'none', cursor: 'pointer', color: '#6C5CE7', minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => openEdit(ing)} title="Editar insumo"><Edit2 size={18} /></button>
+                    <button style={{ padding: '0.375rem', borderRadius: '0.375rem', background: '#FFF5F5', border: 'none', cursor: 'pointer', color: '#E74C3C', minHeight: '44px', minWidth: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setDeleteId(ing.id)} title="Eliminar insumo"><Trash2 size={18} /></button>
                   </div>
                 </td>
               </tr>

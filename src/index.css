@@ -81,7 +81,9 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  min-height: 44px; /* Touch target */
 }
 .btn-primary:hover {
   transform: translateY(-1px);
@@ -105,7 +107,9 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  min-height: 44px; /* Touch target */
 }
 .btn-ghost:hover {
   background: #F4F3FF;
@@ -195,6 +199,7 @@ h1, h2, h3, h4, h5, h6 {
   background: white;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 44px; /* Touch target */
 }
 .input-marea:focus {
   border-color: #6C5CE7;
@@ -259,6 +264,51 @@ h1, h2, h3, h4, h5, h6 {
 }
 .marea-table tr:hover td {
   background: #FAFAFE;
+}
+
+/* Responsive Table (Mobile-first) */
+@media (max-width: 768px) {
+  .marea-table, .marea-table tbody, .marea-table tr, .marea-table td {
+    display: block;
+    width: 100%;
+  }
+  .marea-table thead {
+    display: none;
+  }
+  .marea-table tr {
+    margin-bottom: 1rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #E8E3FF;
+    box-shadow: 0 4px 16px rgba(108, 92, 231, 0.04);
+    overflow: hidden;
+  }
+  .marea-table td {
+    text-align: right;
+    padding: 0.75rem 1rem;
+    position: relative;
+    border-bottom: 1px solid #F4F3FF;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+  .marea-table td:last-child {
+    border-bottom: 0;
+  }
+  .marea-table td::before {
+    content: attr(data-label);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #636E72;
+    text-transform: uppercase;
+    text-align: left;
+  }
+  /* If a td has only actions and no label, center it */
+  .marea-table td.actions-cell {
+    justify-content: flex-end;
+  }
 }
 
 /* Page header */
@@ -345,6 +395,10 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }

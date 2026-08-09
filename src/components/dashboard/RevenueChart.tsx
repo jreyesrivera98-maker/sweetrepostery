@@ -30,12 +30,12 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-[#FDFDFD] p-4 rounded-lg shadow-lg border border-[#E8E3FF] font-inter">
-          <p className="text-sm font-medium text-[#2D3436] mb-2">{label}</p>
-          <p className="text-sm" style={{ color: '#6C5CE7' }}>
+        <div className="bg-surface p-4 rounded-lg shadow-lg border border-border font-inter">
+          <p className="text-sm font-medium text-text mb-2">{label}</p>
+          <p className="text-sm text-primary">
             Ingresos: {formatCurrency(payload[0].value)}
           </p>
-          <p className="text-sm" style={{ color: '#D6BBFB' }}>
+          <p className="text-sm text-secondary">
             Pedidos: {payload[1].value}
           </p>
         </div>
@@ -58,26 +58,26 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
         >
           <defs>
             <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#6C5CE7" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#6C5CE7" stopOpacity={0}/>
+              <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
             </linearGradient>
             <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#D6BBFB" stopOpacity={0.8}/>
-              <stop offset="95%" stopColor="#D6BBFB" stopOpacity={0}/>
+              <stop offset="5%" stopColor="var(--color-secondary)" stopOpacity={0.8}/>
+              <stop offset="95%" stopColor="var(--color-secondary)" stopOpacity={0}/>
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8E3FF" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
           <XAxis 
             dataKey="date" 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#636E72', fontSize: 12 }}
+            tick={{ fill: 'var(--color-muted)', fontSize: 12 }}
             dy={10}
           />
           <YAxis 
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#636E72', fontSize: 12 }}
+            tick={{ fill: 'var(--color-muted)', fontSize: 12 }}
             tickFormatter={(value) => `$${value}`}
             dx={-10}
           />
@@ -85,7 +85,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
           <Area 
             type="monotone" 
             dataKey="revenue" 
-            stroke="#6C5CE7" 
+            stroke="var(--color-primary)" 
             strokeWidth={2}
             fillOpacity={1} 
             fill="url(#colorRevenue)" 
@@ -93,7 +93,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({ data }) => {
           <Area 
             type="monotone" 
             dataKey="orders" 
-            stroke="#D6BBFB" 
+            stroke="var(--color-secondary)" 
             strokeWidth={2}
             fillOpacity={1} 
             fill="url(#colorOrders)" 
