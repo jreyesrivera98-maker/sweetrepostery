@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, Loader2 } from 'lucide-react';
 import { BrandLogo } from '../../components/brand/BrandLogo';
-import { supabase } from '../../lib/supabase';
+import { supabase, isMockMode } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export const LoginPage: React.FC = () => {
@@ -19,13 +19,23 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setUser({ id: 'mock-user-123', email, role: 'admin', name: 'Usuario Demo' });
+        navigate('/');
+        return;
+      }
+
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
       if (authError) throw authError;
       if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email!, role: 'admin', name: 'Admin Marea' });
+        const name = data.user.user_metadata?.name || 'Usuario';
+        const role = data.user.user_metadata?.role || 'admin';
+        setUser({ id: data.user.id, email: data.user.email!, role, name });
         navigate('/');
       }
-    } catch {
+    } catch (err: unknown) {
       // Demo mode: bypass auth for demo credentials
       if (email === 'admin@mareadulce.mx') {
         setUser({ id: 'demo', email, role: 'admin', name: 'Admin Marea' });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, User, Loader2 } from 'lucide-react';
 import { BrandLogo } from '../../components/brand/BrandLogo';
-import { supabase } from '../../lib/supabase';
+import { supabase, isMockMode } from '../../lib/supabase';
 import { useAuthStore } from '../../store/useAuthStore';
 import type { UserRole } from '../../types';
 
@@ -25,6 +25,14 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      if (isMockMode) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setUser({ id: Math.random().toString(36).substr(2, 9), email, role, name });
+        navigate('/');
+        return;
+      }
+
       const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { data: { name, role } } });
       if (authError) throw authError;
       if (data.user) {
