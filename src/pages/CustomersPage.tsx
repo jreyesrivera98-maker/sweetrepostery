@@ -81,7 +81,7 @@ export const CustomersPage: React.FC = () => {
           <h1 className="page-title">Clientes CRM</h1>
           <p className="page-subtitle">{customers.length} clientes registrados</p>
         </div>
-        <button className="btn-primary"><Plus size={16} /> Nuevo Cliente</button>
+        <button onClick={() => toast.info('Función en desarrollo (Modo Demo)')} className="btn-primary"><Plus size={16} /> Nuevo Cliente</button>
       </div>
 
       {/* Search */}

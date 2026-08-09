@@ -43,7 +43,7 @@ export const DesignerPage: React.FC = () => {
     setPromptUsed(prompt);
     const baseSeed = Math.floor(Math.random() * 99999);
     const newImages = Array.from({ length: 4 }).map((_, i) =>
-      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${baseSeed + i * 7}&width=512&height=512&nologo=true&enhance=true`
+      `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' [Variante ' + (i+1) + ']')}?seed=${baseSeed + i * 9999}&width=512&height=512&nologo=true&enhance=true`
     );
     setGeneratedImages(newImages);
     // Images load asynchronously via <img> — mark done after short delay for UX

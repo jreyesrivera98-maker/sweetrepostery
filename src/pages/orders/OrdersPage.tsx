@@ -157,7 +157,7 @@ export const OrdersPage: React.FC = () => {
             </button>
           </div>
           <button onClick={() => navigate('/pedidos/bitacora')} className="btn-ghost">Bitácora</button>
-          <button className="btn-primary"><Plus size={16} /> Nuevo Pedido</button>
+          <button onClick={() => toast.info('Función en desarrollo (Modo Demo)')} className="btn-primary"><Plus size={16} /> Nuevo Pedido</button>
         </div>
       </div>
 

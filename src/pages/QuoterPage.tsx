@@ -3,6 +3,7 @@ import { Calculator, Save, Printer, Clock, Star, Zap, Crown } from 'lucide-react
 import { mockRecipes, mockQuotes } from '../lib/mockData';
 import type { ComplexityLevel } from '../types';
 import { AIPriceOptimizer } from '../components/quotes/AIPriceOptimizer';
+import { useToast } from '../components/ui/ToastContext';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -23,7 +24,9 @@ export const QuoterPage: React.FC = () => {
   const [overheadPercent, setOverheadPercent] = useState(15);
   const [marginPercent, setMarginPercent] = useState(55);
   const [advancePercent, setAdvancePercent] = useState(50);
+  const [advancePercent, setAdvancePercent] = useState(50);
   const [tab, setTab] = useState<'form' | 'history'>('form');
+  const { toast } = useToast();
 
   const selectedRecipe = mockRecipes.find(r => r.id === recipeId);
   const complexityOption = COMPLEXITY_OPTIONS.find(c => c.id === complexity)!;
@@ -60,7 +63,9 @@ export const QuoterPage: React.FC = () => {
             setOverheadPercent(15);
             setMarginPercent(55);
             setAdvancePercent(50);
+            setAdvancePercent(50);
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast.success('Formulario reiniciado');
           }} className={tab === 'form' ? 'btn-primary' : 'btn-ghost'} style={{ fontSize: '0.8rem' }}>
             <Calculator size={15} /> Nueva Cotización
           </button>
@@ -158,8 +163,8 @@ export const QuoterPage: React.FC = () => {
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}><Save size={16} /> Guardar Cotización</button>
-              <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}><Printer size={16} /> Generar PDF</button>
+              <button onClick={() => { toast.success('Cotización guardada exitosamente'); setTab('history'); }} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}><Save size={16} /> Guardar Cotización</button>
+              <button onClick={() => toast.info('Generando PDF...')} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}><Printer size={16} /> Generar PDF</button>
             </div>
           </div>
 
