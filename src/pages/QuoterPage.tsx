@@ -24,7 +24,6 @@ export const QuoterPage: React.FC = () => {
   const [overheadPercent, setOverheadPercent] = useState(15);
   const [marginPercent, setMarginPercent] = useState(55);
   const [advancePercent, setAdvancePercent] = useState(50);
-  const [advancePercent, setAdvancePercent] = useState(50);
   const [tab, setTab] = useState<'form' | 'history'>('form');
   const { toast } = useToast();
 
@@ -62,7 +61,6 @@ export const QuoterPage: React.FC = () => {
             setDepreciation(30);
             setOverheadPercent(15);
             setMarginPercent(55);
-            setAdvancePercent(50);
             setAdvancePercent(50);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             toast.success('Formulario reiniciado');
