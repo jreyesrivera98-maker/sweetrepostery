@@ -151,3 +151,49 @@ Responde en español con: sustituto recomendado, cantidad equivalente, ajuste de
 
   return callGemini(prompt);
 }
+
+// ---- IMAGE GENERATION (IMAGEN 3) ----
+export async function generateImageWithGemini(prompt: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    throw new Error('VITE_GEMINI_API_KEY no está configurada.');
+  }
+
+  // Usamos el modelo Imagen 3 oficial vía el endpoint predict
+  const url = `${GEMINI_BASE}/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`;
+  
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      instances: [
+        { prompt }
+      ],
+      parameters: {
+        sampleCount: 1,
+        // Usamos un formato panorámico (landscape) ideal para el 3-panel split
+        aspectRatio: "16:9",
+        outputOptions: {
+          mimeType: "image/jpeg",
+          compressionQuality: 85
+        }
+      }
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Error de Gemini Imagen 3: ${err}`);
+  }
+
+  const data = await res.json();
+  
+  // La respuesta devuelve predicciones en base64
+  const base64Image = data.predictions?.[0]?.bytesBase64Encoded;
+  const mimeType = data.predictions?.[0]?.mimeType || 'image/jpeg';
+  
+  if (!base64Image) {
+    throw new Error('La IA no devolvió una imagen válida.');
+  }
+
+  return `data:${mimeType};base64,${base64Image}`;
+}

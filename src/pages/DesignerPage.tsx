@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Wand2, Download, Image as ImageIcon } from 'lucide-react';
 import { ColorPaletteEditor } from '../components/designer/ColorPaletteEditor';
 import type { ColorSwatch } from '../components/designer/ColorPaletteEditor';
+import { generateImageWithGemini } from '../lib/gemini';
+import { useToast } from '../components/ui/ToastContext';
 
 export const DesignerPage: React.FC = () => {
   const [description, setDescription] = useState('');
@@ -14,6 +16,7 @@ export const DesignerPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [promptUsed, setPromptUsed] = useState('');
+  const { toast } = useToast();
 
   const styles = ['Minimalista', 'Romántico', 'Boho', 'Elegante', 'Infantil', 'Moderno'];
   const occasions = ['Cumpleaños', 'Boda', 'Baby Shower', 'Graduación', 'Corporativo', 'San Valentín'];
@@ -36,18 +39,23 @@ export const DesignerPage: React.FC = () => {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
-    const colors = palette.map(p => p.hex).join(', ');
-    const prompt = `A high-resolution product concept presentation sheet, 3-panel split view side-by-side, presenting 3 distinct design options for a ${style} ${occasion} cake. Colors: ${colors}. Concept: ${description}. Layout & Style: Clean studio presentation sheet, uniform studio lighting, neutral background, ultra-detailed, photorealistic, 8k resolution, professional design showcase.`;
-    setPromptUsed(prompt);
-    const baseSeed = Math.floor(Math.random() * 9999999);
-    // Request a wide image for the 3 panels
-    const newImage = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${baseSeed}&width=1536&height=512&nologo=true&enhance=true`;
-    
-    setGeneratedImage(newImage);
-    // Images load asynchronously via <img> — mark done after short delay for UX
-    setTimeout(() => setIsGenerating(false), 800);
+    setGeneratedImage(null);
+    try {
+      const colors = palette.map(p => p.hex).join(', ');
+      const prompt = `A high-resolution product concept presentation sheet, 3-panel split view side-by-side, presenting 3 distinct design options for a ${style} ${occasion} cake. Colors: ${colors}. Concept: ${description}. Layout & Style: Clean studio presentation sheet, uniform studio lighting, neutral background, ultra-detailed, photorealistic, professional design showcase.`;
+      
+      setPromptUsed(prompt);
+      
+      const newImage = await generateImageWithGemini(prompt);
+      setGeneratedImage(newImage);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al generar la imagen. Verifica tu conexión o clave de API.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
