@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Save, Store, Palette, Layout, FileText, ToggleLeft } from 'lucide-react';
+import { Save, Store, Layout, FileText, ToggleLeft } from 'lucide-react';
 import { CatalogPage } from './CatalogPage';
 import { useToast } from '../../components/ui/ToastContext';
 import { supabase } from '../../lib/supabase';
