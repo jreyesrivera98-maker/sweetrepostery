@@ -7,7 +7,74 @@ import type { Customer } from '../types';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../components/ui/ToastContext';
 import { AlertDialog } from '../components/ui/AlertDialog';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, X } from 'lucide-react';
+
+const CustomerFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (customer: Customer) => void }> = ({ isOpen, onClose, onSave }) => {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
+  const [allergies, setAllergies] = useState('');
+  const [notes, setNotes] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name) return;
+    const newCustomer: Customer = {
+      id: Math.random().toString(36).substr(2, 9),
+      name, phone, email, address, allergies, notes,
+      loyalty_points: 0, important_dates: [],
+      created_at: new Date().toISOString()
+    };
+    onSave(newCustomer);
+    setName(''); setPhone(''); setEmail(''); setAddress(''); setAllergies(''); setNotes('');
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-poppins font-bold text-gray-900">Nuevo Cliente</h2>
+          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+            <input required className="input-marea" value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Ana Pérez" />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <input className="input-marea" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Ej. 5551234567" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" className="input-marea" value={email} onChange={e => setEmail(e.target.value)} placeholder="ejemplo@correo.com" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección / Notas de envío</label>
+            <input className="input-marea" value={address} onChange={e => setAddress(e.target.value)} placeholder="Ej. Calle 123, Col. Centro" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-orange-600 font-semibold">Alergias (Importante)</label>
+            <input className="input-marea border-orange-200 focus:border-orange-400" value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="Ej. Nuez, Gluten, Lácteos..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notas generales</label>
+            <textarea className="input-marea resize-none" rows={3} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Preferencias, historial de trato, etc." />
+          </div>
+          <div className="pt-4 flex gap-3">
+            <button type="button" onClick={onClose} className="btn-ghost flex-1 justify-center">Cancelar</button>
+            <button type="submit" className="btn-primary flex-1 justify-center">Guardar Cliente</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
@@ -15,6 +82,7 @@ export const CustomersPage: React.FC = () => {
   const [selected, setSelected] = useState<Customer | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const { toast } = useToast();
 
   const isUpcoming = (dateStr: string) => {
@@ -81,7 +149,7 @@ export const CustomersPage: React.FC = () => {
           <h1 className="page-title">Clientes CRM</h1>
           <p className="page-subtitle">{customers.length} clientes registrados</p>
         </div>
-        <button onClick={() => toast.info('Función en desarrollo (Modo Demo)')} className="btn-primary"><Plus size={16} /> Nuevo Cliente</button>
+        <button onClick={() => setIsNewModalOpen(true)} className="btn-primary"><Plus size={16} /> Nuevo Cliente</button>
       </div>
 
       {/* Search */}
@@ -233,6 +301,16 @@ export const CustomersPage: React.FC = () => {
         isLoading={isDeleting}
         title="Eliminar cliente"
         description="¿Estás seguro de eliminar este cliente? Se perderán sus puntos de lealtad y su historial de pedidos."
+      />
+
+      <CustomerFormModal 
+        isOpen={isNewModalOpen} 
+        onClose={() => setIsNewModalOpen(false)} 
+        onSave={(c) => {
+          setCustomers([c, ...customers]);
+          setIsNewModalOpen(false);
+          toast.success('Cliente creado exitosamente (Modo Demo)');
+        }} 
       />
     </div>
   );

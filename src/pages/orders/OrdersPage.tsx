@@ -10,6 +10,134 @@ import type { Order, OrderStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
+import { X } from 'lucide-react';
+
+const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (order: Order) => void }> = ({ isOpen, onClose, onSave }) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [channel, setChannel] = useState<'manual' | 'whatsapp' | 'catalog' | 'instagram'>('manual');
+  const [recipeId, setRecipeId] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [advance, setAdvance] = useState(0);
+
+  if (!isOpen) return null;
+
+  const handleRecipeChange = (id: string) => {
+    setRecipeId(id);
+    const r = mockRecipes.find(rec => rec.id === id);
+    if (r) {
+      setPrice(r.sale_price * quantity);
+      setAdvance((r.sale_price * quantity) / 2); // Default 50%
+    }
+  };
+
+  const handleQuantityChange = (q: number) => {
+    setQuantity(q);
+    const r = mockRecipes.find(rec => rec.id === recipeId);
+    if (r) {
+      setPrice(r.sale_price * q);
+      setAdvance((r.sale_price * q) / 2);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerName || !recipeId || price <= 0) return;
+    
+    const recipe = mockRecipes.find(r => r.id === recipeId)!;
+    const newOrder: Order = {
+      id: Math.random().toString(36).substr(2, 9),
+      folio: `MD-${Math.floor(Math.random() * 90000) + 10000}`,
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : undefined,
+      status: 'pending',
+      channel,
+      total: price,
+      advance_paid: advance,
+      balance_due: price - advance,
+      qc_checklist: {},
+      items: [{ recipe_id: recipe.id, recipe_name: recipe.name, quantity, unit_price: price/quantity, total: price }],
+      created_at: new Date().toISOString()
+    };
+    onSave(newOrder);
+    setCustomerName(''); setCustomerPhone(''); setDeliveryDate(''); setRecipeId(''); setQuantity(1); setPrice(0); setAdvance(0);
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '600px' }}>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-poppins font-bold text-gray-900">Nuevo Pedido Manual</h2>
+          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200"><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+              <input required className="input-marea" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Nombre del cliente" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <input className="input-marea" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Ej. 5551234567" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Entrega</label>
+              <input type="date" className="input-marea" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Canal de Venta</label>
+              <select className="input-marea" value={channel} onChange={e => setChannel(e.target.value as any)}>
+                <option value="manual">Mostrador / Manual</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="instagram">Instagram</option>
+                <option value="catalog">Catálogo</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <h3 className="font-poppins font-semibold text-sm mb-3">Detalle del Producto</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Receta *</label>
+                <select required className="input-marea" value={recipeId} onChange={e => handleRecipeChange(e.target.value)}>
+                  <option value="">— Seleccionar —</option>
+                  {mockRecipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                <input type="number" min="1" required className="input-marea" value={quantity} onChange={e => handleQuantityChange(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Precio Total (MXN)</label>
+              <input type="number" required className="input-marea font-bold text-primary" value={price} onChange={e => setPrice(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Anticipo Recibido (MXN)</label>
+              <input type="number" required className="input-marea text-green-600" value={advance} onChange={e => setAdvance(Number(e.target.value))} />
+            </div>
+          </div>
+
+          <div className="pt-4 flex gap-3">
+            <button type="button" onClick={onClose} className="btn-ghost flex-1 justify-center">Cancelar</button>
+            <button type="submit" className="btn-primary flex-1 justify-center">Crear Pedido</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pendiente',
@@ -41,6 +169,7 @@ export const OrdersPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const { toast } = useToast();
 
   const filtered = orders.filter(o => {
@@ -157,7 +286,7 @@ export const OrdersPage: React.FC = () => {
             </button>
           </div>
           <button onClick={() => navigate('/pedidos/bitacora')} className="btn-ghost">Bitácora</button>
-          <button onClick={() => toast.info('Función en desarrollo (Modo Demo)')} className="btn-primary"><Plus size={16} /> Nuevo Pedido</button>
+          <button onClick={() => setIsNewModalOpen(true)} className="btn-primary"><Plus size={16} /> Nuevo Pedido</button>
         </div>
       </div>
 
@@ -296,6 +425,16 @@ export const OrdersPage: React.FC = () => {
         isLoading={isDeleting}
         title="Eliminar pedido"
         description="¿Estás seguro de eliminar este pedido? Esta acción no se puede deshacer y borrará el historial del mismo."
+      />
+
+      <OrderFormModal 
+        isOpen={isNewModalOpen}
+        onClose={() => setIsNewModalOpen(false)}
+        onSave={(o) => {
+          setOrders([o, ...orders]);
+          setIsNewModalOpen(false);
+          toast.success('Pedido creado exitosamente (Modo Demo)');
+        }}
       />
     </div>
   );
