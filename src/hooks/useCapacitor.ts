@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { App } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { Keyboard } from '@capacitor/keyboard';
 import { useNavigate } from 'react-router-dom';
 
 export function useCapacitor() {
