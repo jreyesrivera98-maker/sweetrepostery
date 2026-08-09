@@ -3,7 +3,7 @@ import { Wand2, Download, Image as ImageIcon, MessageSquareText, CheckCircle2, C
 import { ColorPaletteEditor } from '../components/designer/ColorPaletteEditor';
 import type { ColorSwatch } from '../components/designer/ColorPaletteEditor';
 import { useToast } from '../components/ui/ToastContext';
-import { generateDesignerQuestions, enhanceImagePrompt, DesignerQuestion } from '../lib/gemini';
+import { generateDesignerQuestions, enhanceImagePrompt, type DesignerQuestion } from '../lib/gemini';
 
 type DesignerStep = 'initial' | 'asking' | 'answering' | 'generating' | 'result';
 
