@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Filter, Plus, Wand2, Sparkles, AlertCircle } from 'lucide-react';
-import { mockRecipes } from '../../lib/mockData';
 import { supabase } from '../../lib/supabase';
+import { useDataStore } from '../../store/useDataStore';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 
@@ -10,7 +10,8 @@ export const RecipesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  const [recipes, setRecipes] = useState(mockRecipes);
+  const recipes = useDataStore(s => s.recipes);
+  const deleteStoreRecipe = useDataStore(s => s.deleteRecipe);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -27,12 +28,12 @@ export const RecipesPage: React.FC = () => {
     try {
       const { error } = await supabase.from('recipes').delete().eq('id', deleteId);
       if (error) throw error;
-      setRecipes(prev => prev.filter(r => r.id !== deleteId));
+      deleteStoreRecipe(deleteId);
       toast.success('Receta eliminada correctamente');
     } catch (err: any) {
       console.error(err);
-      setRecipes(prev => prev.filter(r => r.id !== deleteId));
-      toast.info('Eliminada localmente (modo mock)');
+      deleteStoreRecipe(deleteId);
+      toast.info('Eliminada localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);

@@ -5,14 +5,15 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { mockOrders, mockRecipes, mockIngredients } from '../../lib/mockData';
 import type { Order, OrderStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 import { X } from 'lucide-react';
+import { useDataStore } from '../../store/useDataStore';
 
 const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (order: Order) => void }> = ({ isOpen, onClose, onSave }) => {
+  const recipes = useDataStore(s => s.recipes);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -26,7 +27,7 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
 
   const handleRecipeChange = (id: string) => {
     setRecipeId(id);
-    const r = mockRecipes.find(rec => rec.id === id);
+    const r = recipes.find(rec => rec.id === id);
     if (r) {
       setPrice(r.sale_price * quantity);
       setAdvance((r.sale_price * quantity) / 2); // Default 50%
@@ -35,7 +36,7 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
 
   const handleQuantityChange = (q: number) => {
     setQuantity(q);
-    const r = mockRecipes.find(rec => rec.id === recipeId);
+    const r = recipes.find(rec => rec.id === recipeId);
     if (r) {
       setPrice(r.sale_price * q);
       setAdvance((r.sale_price * q) / 2);
@@ -46,7 +47,7 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
     e.preventDefault();
     if (!customerName || !recipeId || price <= 0) return;
     
-    const recipe = mockRecipes.find(r => r.id === recipeId)!;
+    const recipe = recipes.find(r => r.id === recipeId)!;
     const newOrder: Order = {
       id: Math.random().toString(36).substr(2, 9),
       folio: `MD-${Math.floor(Math.random() * 90000) + 10000}`,
@@ -108,7 +109,7 @@ const OrderFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (
                 <label className="block text-sm font-medium text-gray-700 mb-1">Receta *</label>
                 <select required className="input-marea" value={recipeId} onChange={e => handleRecipeChange(e.target.value)}>
                   <option value="">— Seleccionar —</option>
-                  {mockRecipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div>
@@ -163,7 +164,14 @@ const KANBAN_COLUMNS: { id: OrderStatus; label: string; color: string }[] = [
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const orders = useDataStore(s => s.orders);
+  const recipes = useDataStore(s => s.recipes);
+  const ingredients = useDataStore(s => s.ingredients);
+  const updateStoreOrder = useDataStore(s => s.updateOrder);
+  const deleteStoreOrder = useDataStore(s => s.deleteOrder);
+  const updateStoreIngredient = useDataStore(s => s.updateIngredient);
+  const addStoreOrder = useDataStore(s => s.addOrder);
+  
   const [view, setView] = useState<'list' | 'kanban'>('list');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -184,21 +192,25 @@ export const OrdersPage: React.FC = () => {
 
     let hasDeducted = false;
     for (const item of order.items) {
-      const recipe = mockRecipes.find(r => r.id === item.recipe_id);
+      const recipe = recipes.find(r => r.id === item.recipe_id);
       if (!recipe) continue;
       
       for (const rItem of recipe.items) {
-        const ingredient = mockIngredients.find(i => i.id === rItem.ingredient_id);
+        const ingredient = ingredients.find(i => i.id === rItem.ingredient_id);
         if (!ingredient) continue;
         
         const totalToDeduct = rItem.quantity * item.quantity;
         const newStock = Math.max(0, ingredient.stock - totalToDeduct);
         
         try {
+          // Attempt real DB update if present, otherwise just update store
           await supabase.from('ingredients').update({ stock: newStock }).eq('id', ingredient.id);
+          updateStoreIngredient(ingredient.id, { stock: newStock });
           hasDeducted = true;
         } catch (e) {
           console.error('Failed to deduct stock for', ingredient.name);
+          updateStoreIngredient(ingredient.id, { stock: newStock });
+          hasDeducted = true;
         }
       }
     }
@@ -214,7 +226,7 @@ export const OrdersPage: React.FC = () => {
     const oldStatus = orders.find(o => o.id === id)?.status;
     
     // Optimistic UI update
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    updateStoreOrder(id, { status: newStatus });
     
     if (oldStatus === 'pending' && (newStatus === 'production' || newStatus === 'delivered')) {
       handleInventoryDeduction(id);
@@ -233,7 +245,7 @@ export const OrdersPage: React.FC = () => {
   const updateStatus = async (id: string, status: OrderStatus) => {
     const oldStatus = orders.find(o => o.id === id)?.status;
     // Optimistic UI update
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    updateStoreOrder(id, { status });
     
     if (oldStatus === 'pending' && (status === 'production' || status === 'delivered')) {
       handleInventoryDeduction(id);
@@ -255,12 +267,12 @@ export const OrdersPage: React.FC = () => {
     try {
       const { error } = await supabase.from('orders').delete().eq('id', deleteId);
       if (error) throw error;
-      setOrders(prev => prev.filter(o => o.id !== deleteId));
+      deleteStoreOrder(deleteId);
       toast.success('Pedido eliminado correctamente');
     } catch (err: any) {
       console.error(err);
-      setOrders(prev => prev.filter(o => o.id !== deleteId));
-      toast.info('Eliminado localmente (modo mock)');
+      deleteStoreOrder(deleteId);
+      toast.info('Eliminado localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
@@ -431,9 +443,9 @@ export const OrdersPage: React.FC = () => {
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         onSave={(o) => {
-          setOrders([o, ...orders]);
+          addStoreOrder(o);
           setIsNewModalOpen(false);
-          toast.success('Pedido creado exitosamente (Modo Demo)');
+          toast.success('Pedido creado exitosamente');
         }}
       />
     </div>

@@ -5,15 +5,31 @@ import { es } from 'date-fns/locale';
 import { ShoppingBag, DollarSign, BookOpen, AlertTriangle, Calendar, ChevronRight } from 'lucide-react';
 import { KPICard } from '../components/dashboard/KPICard';
 import { RevenueChart } from '../components/dashboard/RevenueChart';
-import { mockOrders, mockRecipes, mockIngredients, mockRevenueData } from '../lib/mockData';
+import { useDataStore } from '../store/useDataStore';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const orders = useDataStore(s => s.orders);
+  const recipes = useDataStore(s => s.recipes);
+  const ingredients = useDataStore(s => s.ingredients);
+
   const currentDate = format(new Date(), "EEEE, d 'de' MMMM, yyyy", { locale: es });
 
-  const activeOrdersCount = mockOrders.filter(o => o.status === 'pending' || o.status === 'ready').length;
-  const totalRevenue = mockOrders.reduce((sum, order) => sum + order.total, 0);
-  const lowStockCount = mockIngredients.filter(i => i.stock <= i.min_stock).length;
+  const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'ready').length;
+  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const lowStockCount = ingredients.filter(i => i.stock <= i.min_stock).length;
+
+  const mockRevenueData = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.now() - (29 - i) * 86400000);
+    const dateStr = d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    const dayOrders = orders.filter(o => new Date(o.created_at).toDateString() === d.toDateString());
+    return {
+      date: dateStr,
+      revenue: dayOrders.reduce((sum, o) => sum + o.total, 0),
+      orders: dayOrders.length,
+    };
+  });
+
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -22,11 +38,11 @@ export const DashboardPage: React.FC = () => {
     }).format(value);
   };
 
-  const upcomingDeliveries = [...mockOrders]
+  const upcomingDeliveries = [...orders]
     .sort((a, b) => new Date(a.delivery_date ?? '').getTime() - new Date(b.delivery_date ?? '').getTime())
     .slice(0, 5);
 
-  const recentOrders = [...mockOrders]
+  const recentOrders = [...orders]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
@@ -80,7 +96,7 @@ export const DashboardPage: React.FC = () => {
         />
         <KPICard
           title="Recetas Totales"
-          value={mockRecipes.length}
+          value={recipes.length}
           icon={BookOpen}
           trend={3.1}
           trendLabel="nuevas este mes"

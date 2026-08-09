@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Plus, Search, Star, AlertTriangle, Phone, Mail, MapPin, Gift, Heart } from 'lucide-react';
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { mockCustomers, mockOrders } from '../lib/mockData';
 import type { Customer } from '../types';
 import { supabase } from '../lib/supabase';
+import { useDataStore } from '../store/useDataStore';
 import { useToast } from '../components/ui/ToastContext';
 import { AlertDialog } from '../components/ui/AlertDialog';
 import { Trash2, Edit, X } from 'lucide-react';
@@ -77,7 +77,12 @@ const CustomerFormModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave
 };
 
 export const CustomersPage: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
+  const customers = useDataStore(s => s.customers);
+  const orders = useDataStore(s => s.orders);
+  const addStoreCustomer = useDataStore(s => s.addCustomer);
+  const deleteStoreCustomer = useDataStore(s => s.deleteCustomer);
+  const updateStoreCustomer = useDataStore(s => s.updateCustomer);
+
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Customer | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -101,13 +106,13 @@ export const CustomersPage: React.FC = () => {
     (c.phone?.includes(search) ?? false)
   );
 
-  const customerOrders = selected ? mockOrders.filter(o => o.customer_name === selected.name) : [];
+  const customerOrders = selected ? orders.filter(o => o.customer_name === selected.name) : [];
 
   const redeemPoints = async (id: string, points: number) => {
     if (points < 100) { toast.error('Mínimo 100 puntos para canjear.'); return; }
     
     // Optimistic UI update
-    setCustomers(prev => prev.map(c => c.id === id ? { ...c, loyalty_points: c.loyalty_points - 100 } : c));
+    updateStoreCustomer(id, { loyalty_points: points - 100 });
     if (selected && selected.id === id) {
       setSelected({ ...selected, loyalty_points: selected.loyalty_points - 100 });
     }
@@ -118,7 +123,7 @@ export const CustomersPage: React.FC = () => {
       toast.success('100 puntos canjeados por 5% de descuento.');
     } catch (err: any) {
       console.error(err);
-      toast.info('Canjeado localmente (modo mock)');
+      toast.info('Canjeado localmente');
     }
   };
 
@@ -128,14 +133,14 @@ export const CustomersPage: React.FC = () => {
     try {
       const { error } = await supabase.from('customers').delete().eq('id', deleteId);
       if (error) throw error;
-      setCustomers(prev => prev.filter(c => c.id !== deleteId));
+      deleteStoreCustomer(deleteId);
       if (selected?.id === deleteId) setSelected(null);
       toast.success('Cliente eliminado correctamente');
     } catch (err: any) {
       console.error(err);
-      setCustomers(prev => prev.filter(c => c.id !== deleteId));
+      deleteStoreCustomer(deleteId);
       if (selected?.id === deleteId) setSelected(null);
-      toast.info('Eliminado localmente (modo mock)');
+      toast.info('Eliminado localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
@@ -307,9 +312,9 @@ export const CustomersPage: React.FC = () => {
         isOpen={isNewModalOpen} 
         onClose={() => setIsNewModalOpen(false)} 
         onSave={(c) => {
-          setCustomers([c, ...customers]);
+          addStoreCustomer(c);
           setIsNewModalOpen(false);
-          toast.success('Cliente creado exitosamente (Modo Demo)');
+          toast.success('Cliente creado exitosamente');
         }} 
       />
     </div>

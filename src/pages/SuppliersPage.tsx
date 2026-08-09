@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Plus, Phone, Mail, TrendingDown, Trash2, Edit2, X, Save } from 'lucide-react';
-import { mockSuppliers, mockIngredients } from '../lib/mockData';
 import type { Supplier, Ingredient } from '../types';
 import { supabase } from '../lib/supabase';
+import { useDataStore } from '../store/useDataStore';
 import { useToast } from '../components/ui/ToastContext';
 import { AlertDialog } from '../components/ui/AlertDialog';
 
@@ -22,7 +22,11 @@ const EMPTY_FORM: SupplierForm = {
 const SUPPLIER_CATEGORIES = ['Harinas y Azúcares', 'Chocolates', 'Lácteos', 'Frutas', 'Decoración', 'Empaques', 'General'];
 
 export const SuppliersPage: React.FC = () => {
-  const [suppliers, setSuppliers] = useState<Supplier[]>(mockSuppliers);
+  const suppliers = useDataStore(s => s.suppliers);
+  const ingredients = useDataStore(s => s.ingredients);
+  const addStoreSupplier = useDataStore(s => s.addSupplier);
+  const updateStoreSupplier = useDataStore(s => s.updateSupplier);
+  const deleteStoreSupplier = useDataStore(s => s.deleteSupplier);
   const [selectedIngredientId, setSelectedIngredientId] = useState<string>('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,23 +62,23 @@ export const SuppliersPage: React.FC = () => {
       if (editingId) {
         const { error } = await supabase.from('suppliers').update(form).eq('id', editingId);
         if (error) throw error;
-        setSuppliers(prev => prev.map(s => s.id === editingId ? { ...s, ...form } : s));
+        updateStoreSupplier(editingId, form);
         toast.success('Proveedor actualizado correctamente');
       } else {
         const { data, error } = await supabase.from('suppliers').insert({ ...form, created_at: new Date().toISOString() }).select().single();
         if (error) throw error;
         const created = data ?? { id: crypto.randomUUID(), ...form, created_at: new Date().toISOString() };
-        setSuppliers(prev => [...prev, created as Supplier]);
+        addStoreSupplier(created as Supplier);
         toast.success('Proveedor creado correctamente');
       }
     } catch (err: any) {
       console.error(err);
       if (editingId) {
-        setSuppliers(prev => prev.map(s => s.id === editingId ? { ...s, ...form } : s));
+        updateStoreSupplier(editingId, form);
       } else {
-        setSuppliers(prev => [...prev, { id: crypto.randomUUID(), ...form, created_at: new Date().toISOString() } as Supplier]);
+        addStoreSupplier({ id: crypto.randomUUID(), ...form, created_at: new Date().toISOString() } as Supplier);
       }
-      toast.info('Guardado localmente (modo mock)');
+      toast.info('Guardado localmente');
     } finally {
       setIsSaving(false);
       setModalOpen(false);
@@ -87,12 +91,12 @@ export const SuppliersPage: React.FC = () => {
     try {
       const { error } = await supabase.from('suppliers').delete().eq('id', deleteId);
       if (error) throw error;
-      setSuppliers(prev => prev.filter(s => s.id !== deleteId));
+      deleteStoreSupplier(deleteId);
       toast.success('Proveedor eliminado correctamente');
     } catch (err: any) {
       console.error(err);
-      setSuppliers(prev => prev.filter(s => s.id !== deleteId));
-      toast.info('Eliminado localmente (modo mock)');
+      deleteStoreSupplier(deleteId);
+      toast.info('Eliminado localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
@@ -171,7 +175,7 @@ export const SuppliersPage: React.FC = () => {
               onChange={(e) => setSelectedIngredientId(e.target.value)}
             >
               <option value="">-- Seleccione un insumo --</option>
-              {mockIngredients?.map((ing: Ingredient) => (
+              {ingredients?.map((ing: Ingredient) => (
                 <option key={ing.id} value={ing.id}>{ing.name}</option>
               ))}
             </select>

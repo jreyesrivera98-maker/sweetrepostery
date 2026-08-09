@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Download, Filter, FileText, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { mockOrders } from '../../lib/mockData';
 import type { Order, OrderStatus } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useDataStore } from '../../store/useDataStore';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
 
@@ -19,7 +19,9 @@ function getPaymentStatus(order: Order) {
 }
 
 export const BitacoraPage: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const orders = useDataStore(s => s.orders);
+  const updateStoreOrder = useDataStore(s => s.updateOrder);
+  const deleteStoreOrder = useDataStore(s => s.deleteOrder);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
@@ -51,13 +53,13 @@ export const BitacoraPage: React.FC = () => {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
 
   const handleUpdateStatus = async (id: string, status: OrderStatus) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+    updateStoreOrder(id, { status });
     try {
       const { error } = await supabase.from('orders').update({ status }).eq('id', id);
       if (error) throw error;
       toast.success('Estado actualizado');
     } catch {
-      toast.info('Actualizado localmente (modo mock)');
+      toast.info('Actualizado localmente');
     }
   };
 
@@ -67,11 +69,11 @@ export const BitacoraPage: React.FC = () => {
     try {
       const { error } = await supabase.from('orders').delete().eq('id', deleteId);
       if (error) throw error;
-      setOrders(prev => prev.filter(o => o.id !== deleteId));
+      deleteStoreOrder(deleteId);
       toast.success('Pedido eliminado correctamente');
     } catch {
-      setOrders(prev => prev.filter(o => o.id !== deleteId));
-      toast.info('Eliminado localmente (modo mock)');
+      deleteStoreOrder(deleteId);
+      toast.info('Eliminado localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);

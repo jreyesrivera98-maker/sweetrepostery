@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Save, Circle, Square, Minus } from 'lucide-react';
 import { MareaRecipeAi } from '../../components/recipes/MareaRecipeAi';
+import { useDataStore } from '../../store/useDataStore';
+import type { Recipe } from '../../types';
 
 export const RecipeFormPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isAiMode = searchParams.get('ai') === 'true';
   const navigate = useNavigate();
+  const addRecipe = useDataStore(state => state.addRecipe);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -60,7 +63,36 @@ export const RecipeFormPage: React.FC = () => {
         <h1 className="page-title text-3xl font-bold font-poppins text-[#2D3436]">
           Nueva Receta
         </h1>
-        <button className="btn-primary px-6 py-2 rounded-lg bg-[#6C5CE7] text-white hover:bg-[#4834D4] flex items-center">
+        <button onClick={() => {
+          if (!name) return;
+          const recipe: Recipe = {
+            id: Math.random().toString(36).substr(2, 9),
+            name,
+            description,
+            category,
+            yield_portions: parseInt(yieldPortions) || 1,
+            prep_minutes: parseInt(prepMinutes) || 0,
+            image_url: null as any,
+            steps,
+            margin_percent: margin,
+            sale_price: salePrice,
+            published: true,
+            mold_type: moldType as any,
+            mold_dimensions: moldType === 'circular' ? { diameter: parseInt(moldDiameter) || 0 } : moldType === 'rectangular' ? { width: parseInt(moldWidth) || 0, height: parseInt(moldHeight) || 0 } : {},
+            items: ingredients.map(ing => ({
+              ingredient_id: Math.random().toString(),
+              ingredient_name: ing.name,
+              quantity: parseFloat(ing.quantity) || 0,
+              unit: ing.unit,
+              cost_per_unit: (parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1),
+              total_cost: (parseFloat(ing.quantity) || 0) * ((parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1))
+            })),
+            ai_generated: isAiMode,
+            created_at: new Date().toISOString()
+          };
+          addRecipe(recipe);
+          navigate('/recetas');
+        }} className="btn-primary px-6 py-2 rounded-lg bg-[#6C5CE7] text-white hover:bg-[#4834D4] flex items-center">
           <Save size={18} className="mr-2" />
           Guardar Receta
         </button>
@@ -220,7 +252,36 @@ export const RecipeFormPage: React.FC = () => {
               <label htmlFor="published" className="text-sm font-medium text-[#2D3436]">Publicar receta inmediatamente</label>
             </div>
             
-            <button onClick={() => navigate('/recetas')} className="w-full btn-primary py-3 rounded-lg bg-[#6C5CE7] text-white font-bold hover:bg-[#4834D4]">
+            <button onClick={() => {
+              if (!name) return;
+              const recipe: Recipe = {
+                id: Math.random().toString(36).substr(2, 9),
+                name,
+                description,
+                category,
+                yield_portions: parseInt(yieldPortions) || 1,
+                prep_minutes: parseInt(prepMinutes) || 0,
+                image_url: null as any,
+                steps,
+                margin_percent: margin,
+                sale_price: salePrice,
+                published: true,
+                mold_type: moldType as any,
+                mold_dimensions: moldType === 'circular' ? { diameter: parseInt(moldDiameter) || 0 } : moldType === 'rectangular' ? { width: parseInt(moldWidth) || 0, height: parseInt(moldHeight) || 0 } : {},
+                items: ingredients.map(ing => ({
+                  ingredient_id: Math.random().toString(),
+                  ingredient_name: ing.name,
+                  quantity: parseFloat(ing.quantity) || 0,
+                  unit: ing.unit,
+                  cost_per_unit: (parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1),
+                  total_cost: (parseFloat(ing.quantity) || 0) * ((parseFloat(ing.package_cost) || 0) / (parseFloat(ing.package_quantity) || 1))
+                })),
+                ai_generated: isAiMode,
+                created_at: new Date().toISOString()
+              };
+              addRecipe(recipe);
+              navigate('/recetas');
+            }} className="w-full btn-primary py-3 rounded-lg bg-[#6C5CE7] text-white font-bold hover:bg-[#4834D4]">
               Guardar Receta
             </button>
           </div>

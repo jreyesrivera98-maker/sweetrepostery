@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, ArrowRight, Clock, ChefHat } from 'lucide-react';
-import { mockRecipes } from '../../lib/mockData';
 import { useAppStore } from '../../store/useAppStore';
+import { useDataStore } from '../../store/useDataStore';
 
 interface CatalogPageProps {
   isPreviewMode?: boolean;
@@ -11,11 +11,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cart, setCart] = useState<{id: string, qty: number}[]>([]);
   const { settings } = useAppStore();
+  const recipes = useDataStore(s => s.recipes);
   
-  const publishedProducts = mockRecipes?.filter(r => r.published) || [
-    { id: '1', name: 'Pastel de Zanahoria', description: 'Delicioso pastel húmedo con betún de queso crema.', price: 450, category: 'Pasteles', image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&q=80' },
-    { id: '2', name: 'Brownies Clasicos', description: 'Caja con 6 brownies de chocolate intenso.', price: 180, category: 'Postres', image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=500&q=80' }
-  ];
+  const publishedProducts = recipes?.filter(r => r.published) || [];
+
 
   const addToCart = (id: string) => {
     setCart(prev => {

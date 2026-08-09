@@ -4,7 +4,7 @@ import { ArrowLeft, MonitorPlay, Edit, DollarSign, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../components/ui/ToastContext';
 import { AlertDialog } from '../../components/ui/AlertDialog';
-import { mockRecipes } from '../../lib/mockData';
+import { useDataStore } from '../../store/useDataStore';
 import { useRBAC } from '../../hooks/useRBAC';
 import { MermaZeroPanel } from '../../components/recipes/MermaZeroPanel';
 import { KDSMode } from '../../components/recipes/KDSMode';
@@ -19,7 +19,10 @@ export const RecipeDetailPage: React.FC = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  const recipe = mockRecipes.find(r => r.id === id) || mockRecipes[0]; // Fallback to first
+  const recipes = useDataStore(s => s.recipes);
+  const deleteStoreRecipe = useDataStore(s => s.deleteRecipe);
+  
+  const recipe = recipes.find(r => r.id === id) || recipes[0]; // Fallback to first
   const isBakerOnly = isBaker && !isAdmin;
 
   if (!recipe) {
@@ -36,11 +39,13 @@ export const RecipeDetailPage: React.FC = () => {
     try {
       const { error } = await supabase.from('recipes').delete().eq('id', recipe.id);
       if (error) throw error;
+      deleteStoreRecipe(recipe.id);
       toast.success('Receta eliminada correctamente');
       navigate('/recetas');
     } catch (err: any) {
       console.error(err);
-      toast.info('Eliminada localmente (modo mock)');
+      deleteStoreRecipe(recipe.id);
+      toast.info('Eliminada localmente');
       navigate('/recetas');
     } finally {
       setIsDeleting(false);
@@ -161,21 +166,20 @@ export const RecipeDetailPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Mock ingredients rows */}
-                  <tr className="border-b border-gray-100">
-                    <td className="py-3 pl-2 text-[#2D3436] font-medium">Harina de trigo</td>
-                    <td className="py-3 text-[#636E72]">500</td>
-                    <td className="py-3 text-[#636E72]">g</td>
-                    {!isBakerOnly && <td className="py-3 text-right text-[#636E72]">$0.02</td>}
-                    {!isBakerOnly && <td className="py-3 text-right text-[#2D3436] font-medium pr-2">$10.00</td>}
-                  </tr>
-                  <tr className="border-b border-gray-100">
-                    <td className="py-3 pl-2 text-[#2D3436] font-medium">Azúcar</td>
-                    <td className="py-3 text-[#636E72]">250</td>
-                    <td className="py-3 text-[#636E72]">g</td>
-                    {!isBakerOnly && <td className="py-3 text-right text-[#636E72]">$0.03</td>}
-                    {!isBakerOnly && <td className="py-3 text-right text-[#2D3436] font-medium pr-2">$7.50</td>}
-                  </tr>
+                  {recipe.items?.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-100">
+                      <td className="py-3 pl-2 text-[#2D3436] font-medium">{item.ingredient_name}</td>
+                      <td className="py-3 text-[#636E72]">{item.quantity}</td>
+                      <td className="py-3 text-[#636E72]">{item.unit}</td>
+                      {!isBakerOnly && <td className="py-3 text-right text-[#636E72]">${item.cost_per_unit.toFixed(4)}</td>}
+                      {!isBakerOnly && <td className="py-3 text-right text-[#2D3436] font-medium pr-2">${item.total_cost.toFixed(2)}</td>}
+                    </tr>
+                  ))}
+                  {(!recipe.items || recipe.items.length === 0) && (
+                    <tr className="border-b border-gray-100">
+                      <td colSpan={isBakerOnly ? 3 : 5} className="py-3 pl-2 text-[#636E72] text-center">Sin ingredientes</td>
+                    </tr>
+                  )}
                 </tbody>
                 {!isBakerOnly && (
                   <tfoot>
@@ -192,20 +196,18 @@ export const RecipeDetailPage: React.FC = () => {
           <div className="glass-card bg-[#FDFDFD] rounded-2xl p-6 border border-[#E8E3FF] shadow-sm">
             <h2 className="text-xl font-bold font-poppins text-[#2D3436] mb-4">Instrucciones</h2>
             <div className="space-y-4">
-              {/* Mock steps */}
-              {[
-                "Precalentar el horno a 180°C. Preparar el molde engrasado.",
-                "Mezclar los ingredientes secos en un bol grande.",
-                "Agregar los ingredientes húmedos y batir hasta integrar.",
-                "Hornear por 45 minutos."
-              ].map((step, index) => (
-                <div key={index} className="flex">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#EDE9FF] text-[#6C5CE7] flex items-center justify-center font-bold mr-4">
-                    {index + 1}
+              {recipe.steps ? (
+                recipe.steps.split('\n').filter(s => s.trim()).map((step, index) => (
+                  <div key={index} className="flex">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#EDE9FF] text-[#6C5CE7] flex items-center justify-center font-bold mr-4">
+                      {index + 1}
+                    </div>
+                    <p className="text-[#2D3436] font-inter pt-1">{step}</p>
                   </div>
-                  <p className="text-[#2D3436] font-inter pt-1">{step}</p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[#636E72] font-inter">Sin instrucciones disponibles.</p>
+              )}
             </div>
           </div>
         </div>

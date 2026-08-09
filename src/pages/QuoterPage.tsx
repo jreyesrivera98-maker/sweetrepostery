@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Calculator, Save, Printer, Clock, Star, Zap, Crown } from 'lucide-react';
-import { mockRecipes, mockQuotes } from '../lib/mockData';
-import type { ComplexityLevel } from '../types';
+import type { ComplexityLevel, Quote } from '../types';
+import { useDataStore } from '../store/useDataStore';
 import { AIPriceOptimizer } from '../components/quotes/AIPriceOptimizer';
 import { useToast } from '../components/ui/ToastContext';
 import { format } from 'date-fns';
@@ -25,9 +25,12 @@ export const QuoterPage: React.FC = () => {
   const [marginPercent, setMarginPercent] = useState(55);
   const [advancePercent, setAdvancePercent] = useState(50);
   const [tab, setTab] = useState<'form' | 'history'>('form');
+  const recipes = useDataStore(s => s.recipes);
+  const quotes = useDataStore(s => s.quotes);
+  const addStoreQuote = useDataStore(s => s.addQuote);
   const { toast } = useToast();
 
-  const selectedRecipe = mockRecipes.find(r => r.id === recipeId);
+  const selectedRecipe = recipes.find(r => r.id === recipeId);
   const complexityOption = COMPLEXITY_OPTIONS.find(c => c.id === complexity)!;
 
   const ingredientCost = selectedRecipe
@@ -89,7 +92,7 @@ export const QuoterPage: React.FC = () => {
                   <label style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.78rem', color: '#636E72', display: 'block', marginBottom: '0.375rem' }}>Receta</label>
                   <select className="input-marea" value={recipeId} onChange={e => setRecipeId(e.target.value)}>
                     <option value="">— Seleccionar receta —</option>
-                    {mockRecipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -161,7 +164,29 @@ export const QuoterPage: React.FC = () => {
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button onClick={() => { toast.success('Cotización guardada exitosamente'); setTab('history'); }} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}><Save size={16} /> Guardar Cotización</button>
+              <button onClick={() => { 
+                const newQuote: Quote = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  customer_name: customerName || 'Sin Nombre',
+                  recipe_id: recipeId,
+                  recipe_name: selectedRecipe?.name || 'Producto Personalizado',
+                  quantity,
+                  complexity,
+                  base_cost: ingredientCost,
+                  labor_cost: laborCost,
+                  overhead_cost: indirectsCost,
+                  depreciation_cost: depreciationCost,
+                  margin_percent: marginPercent,
+                  final_price: suggestedPrice,
+                  advance_amount: advanceAmount,
+                  balance_amount: balanceAmount,
+                  status: 'sent',
+                  created_at: new Date().toISOString()
+                };
+                addStoreQuote(newQuote);
+                toast.success('Cotización guardada exitosamente'); 
+                setTab('history'); 
+              }} className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}><Save size={16} /> Guardar Cotización</button>
               <button onClick={() => toast.info('Generando PDF...')} className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }}><Printer size={16} /> Generar PDF</button>
             </div>
           </div>
@@ -226,7 +251,7 @@ export const QuoterPage: React.FC = () => {
               <tr><th>Cliente</th><th>Receta</th><th>Complejidad</th><th>Precio Final</th><th>Estado</th><th>Fecha</th></tr>
             </thead>
             <tbody>
-              {mockQuotes.map(q => (
+              {quotes.map(q => (
                 <tr key={q.id}>
                   <td>{q.customer_name}</td>
                   <td>{q.recipe_name}</td>

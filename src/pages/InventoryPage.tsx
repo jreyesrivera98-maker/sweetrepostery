@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, AlertCircle, Package, X, Save } from 'lucide-react';
-import { mockIngredients } from '../lib/mockData';
 import type { Ingredient } from '../types';
 import { supabase } from '../lib/supabase';
+import { useDataStore } from '../store/useDataStore';
 import { useToast } from '../components/ui/ToastContext';
 import { AlertDialog } from '../components/ui/AlertDialog';
 
@@ -33,7 +33,10 @@ const UNITS = ['g', 'kg', 'ml', 'L', 'pza', 'taza', 'cdta'];
 export const InventoryPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [ingredients, setIngredients] = useState<Ingredient[]>(mockIngredients);
+  const ingredients = useDataStore(s => s.ingredients);
+  const addStoreIngredient = useDataStore(s => s.addIngredient);
+  const updateStoreIngredient = useDataStore(s => s.updateIngredient);
+  const deleteStoreIngredient = useDataStore(s => s.deleteIngredient);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,8 +95,7 @@ export const InventoryPage: React.FC = () => {
           cost_per_unit: costPerUnit, stock: form.stock, min_stock: form.min_stock,
         }).eq('id', editingId);
         if (error) throw error;
-        setIngredients(prev => prev.map(ing => ing.id === editingId
-          ? { ...ing, ...form, cost_per_unit: costPerUnit } : ing));
+        updateStoreIngredient(editingId, { ...form, cost_per_unit: costPerUnit });
         toast.success('Insumo actualizado correctamente');
       } else {
         // CREATE
@@ -103,19 +105,18 @@ export const InventoryPage: React.FC = () => {
         const { data, error } = await supabase.from('ingredients').insert(newIng).select().single();
         if (error) throw error;
         const created = data ?? { id: crypto.randomUUID(), ...newIng };
-        setIngredients(prev => [...prev, created as Ingredient]);
+        addStoreIngredient(created as Ingredient);
         toast.success('Insumo creado correctamente');
       }
     } catch (err: any) {
       console.error(err);
       if (editingId) {
-        setIngredients(prev => prev.map(ing => ing.id === editingId
-          ? { ...ing, ...form, cost_per_unit: costPerUnit } : ing));
+        updateStoreIngredient(editingId, { ...form, cost_per_unit: costPerUnit });
       } else {
         const localId = crypto.randomUUID();
-        setIngredients(prev => [...prev, { id: localId, ...form, cost_per_unit: costPerUnit, created_at: new Date().toISOString() }]);
+        addStoreIngredient({ id: localId, ...form, cost_per_unit: costPerUnit, created_at: new Date().toISOString() } as Ingredient);
       }
-      toast.info('Guardado localmente (modo mock)');
+      toast.info('Guardado localmente');
     } finally {
       setIsSaving(false);
       setModalOpen(false);
@@ -123,16 +124,15 @@ export const InventoryPage: React.FC = () => {
   };
 
   const handleUpdateIngredient = async (id: string, field: string, value: number) => {
-    setIngredients(prev => prev.map(ing => {
-      if (ing.id === id) {
-        const updated = { ...ing, [field]: value };
-        if (field === 'package_cost' || field === 'package_quantity') {
-          updated.cost_per_unit = updated.package_cost / (updated.package_quantity || 1);
-        }
-        return updated;
-      }
-      return ing;
-    }));
+    const ing = ingredients.find(i => i.id === id);
+    if (!ing) return;
+    
+    const updated = { ...ing, [field]: value };
+    if (field === 'package_cost' || field === 'package_quantity') {
+      updated.cost_per_unit = updated.package_cost / (updated.package_quantity || 1);
+    }
+    updateStoreIngredient(id, updated);
+    
     try {
       const { error } = await supabase.from('ingredients').update({ [field]: value }).eq('id', id);
       if (error) throw error;
@@ -147,12 +147,12 @@ export const InventoryPage: React.FC = () => {
     try {
       const { error } = await supabase.from('ingredients').delete().eq('id', deleteId);
       if (error) throw error;
-      setIngredients(prev => prev.filter(ing => ing.id !== deleteId));
+      deleteStoreIngredient(deleteId);
       toast.success('Registro eliminado correctamente');
     } catch (err: any) {
       console.error(err);
-      setIngredients(prev => prev.filter(ing => ing.id !== deleteId));
-      toast.info('Eliminado localmente (modo mock)');
+      deleteStoreIngredient(deleteId);
+      toast.info('Eliminado localmente');
     } finally {
       setIsDeleting(false);
       setDeleteId(null);
