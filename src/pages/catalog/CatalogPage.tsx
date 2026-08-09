@@ -67,9 +67,13 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({ isPreviewMode = false 
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: settings.primary_color, fontFamily: settings.font_heading }}>
-              {settings.brand_name.charAt(0)}
-            </div>
+            {settings.logo_url ? (
+               <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain rounded" />
+            ) : (
+               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: settings.primary_color, fontFamily: settings.font_heading }}>
+                 {settings.brand_name.charAt(0)}
+               </div>
+            )}
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight" style={{ fontFamily: settings.font_heading }}>{settings.brand_name}</h1>
           </div>
           {!isPreviewMode && (

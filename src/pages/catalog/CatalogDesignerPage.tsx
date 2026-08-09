@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { Save, Store, Layout, FileText, ToggleLeft, Palette, Type, ShoppingCart, MessageCircle, Share2, QrCode, Copy, Check } from 'lucide-react';
+import { Save, Store, Layout, FileText, ToggleLeft, Palette, Type, Image as ImageIcon, ShoppingCart, MessageCircle, Share2, QrCode, Copy, Check } from 'lucide-react';
 import { CatalogPage } from './CatalogPage';
 import { useToast } from '../../components/ui/ToastContext';
 import { supabase } from '../../lib/supabase';
@@ -117,6 +117,17 @@ export const CatalogDesignerPage: React.FC = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Comercial</label>
                   <input type="text" value={settings.brand_name || ''} onChange={(e) => handleSettingChange('brand_name', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Logo de la Marca</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-xl bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                      {settings.logo_url ? <img src={settings.logo_url} alt="Logo" className="w-full h-full object-cover" /> : <ImageIcon className="w-6 h-6 text-gray-400" />}
+                    </div>
+                    <div className="flex-1">
+                      <input type="file" className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer" />
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -291,8 +302,10 @@ export const CatalogDesignerPage: React.FC = () => {
               <div className="w-16 h-1 rounded-full bg-gray-800" />
             </div>
             
-            <div className="w-full h-full pt-6 overflow-y-auto overflow-x-hidden bg-gray-50 custom-scrollbar pointer-events-none select-none">
-               <CatalogPage isPreviewMode={true} />
+            <div className="w-full h-full pt-6 overflow-y-auto overflow-x-hidden bg-gray-50 custom-scrollbar">
+               <div className="pointer-events-none select-none">
+                 <CatalogPage isPreviewMode={true} />
+               </div>
             </div>
         </div>
       </div>
