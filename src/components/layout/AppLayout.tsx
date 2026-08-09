@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { MobileBottomNav } from './MobileBottomNav';
 
 export const AppLayout: React.FC = () => {
   return (
@@ -9,10 +10,11 @@ export const AppLayout: React.FC = () => {
       <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Topbar />
-        <main style={{ flex: 1, padding: '1.75rem', overflowY: 'auto' }}>
+        <main className="flex-1 p-4 md:p-7 overflow-y-auto pb-24 md:pb-7">
           <Outlet />
         </main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 };

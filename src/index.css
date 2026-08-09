@@ -21,8 +21,8 @@
   --font-body: 'Inter', sans-serif;
   --font-accent: 'Playfair Display', serif;
 
-  /* Radius */
-  --radius-brand: 1rem;
+  /* Radius - increased for mobile-first bubbly design */
+  --radius-brand: 1.5rem;
 }
 
 /* ============================================================
@@ -60,8 +60,8 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(214, 187, 251, 0.4);
-  border-radius: 1rem;
-  box-shadow: 0 4px 24px rgba(108, 92, 231, 0.08);
+  border-radius: var(--radius-brand);
+  box-shadow: 0 8px 32px rgba(108, 92, 231, 0.04);
 }
 
 /* Gradient primary button */
@@ -113,10 +113,10 @@ h1, h2, h3, h4, h5, h6 {
 /* KPI Card */
 .kpi-card {
   background: white;
-  border-radius: 1rem;
+  border-radius: var(--radius-brand);
   padding: 1.5rem;
   border: 1px solid #E8E3FF;
-  box-shadow: 0 2px 12px rgba(108, 92, 231, 0.06);
+  box-shadow: 0 4px 24px rgba(108, 92, 231, 0.04);
   cursor: pointer;
   transition: all 0.25s ease;
   position: relative;
@@ -205,7 +205,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Kanban column */
 .kanban-column {
   background: rgba(244, 243, 255, 0.6);
-  border-radius: 1rem;
+  border-radius: var(--radius-brand);
   border: 1px dashed #E8E3FF;
   padding: 1rem;
   min-height: 400px;
@@ -215,16 +215,16 @@ h1, h2, h3, h4, h5, h6 {
 /* Kanban card */
 .kanban-card {
   background: white;
-  border-radius: 0.875rem;
+  border-radius: 1rem;
   padding: 1rem;
   border: 1px solid #E8E3FF;
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.06);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.04);
   margin-bottom: 0.75rem;
   cursor: grab;
   transition: all 0.2s ease;
 }
 .kanban-card:hover {
-  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.12);
+  box-shadow: 0 8px 24px rgba(108, 92, 231, 0.08);
   border-color: #D6BBFB;
 }
 .kanban-card:active {
@@ -365,15 +365,15 @@ h1, h2, h3, h4, h5, h6 {
 /* Recipe card */
 .recipe-card {
   background: white;
-  border-radius: 1rem;
+  border-radius: var(--radius-brand);
   border: 1px solid #E8E3FF;
   overflow: hidden;
   transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.05);
+  box-shadow: 0 4px 20px rgba(108, 92, 231, 0.04);
 }
 .recipe-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(108, 92, 231, 0.14);
+  box-shadow: 0 12px 30px rgba(108, 92, 231, 0.1);
   border-color: #D6BBFB;
 }
 

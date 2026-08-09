@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Share2, Bell, ChevronDown, LogOut, Settings } from 'lucide-react';
+import { Search, Share2, Bell, ChevronDown, LogOut, Settings, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -14,135 +14,102 @@ const roleLabels: Record<string, string> = {
 export const Topbar: React.FC = () => {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { setShareCatalogOpen, shareCatalogOpen } = useAppStore();
+  const { setShareCatalogOpen, shareCatalogOpen, mobileSearchOpen, setMobileSearchOpen } = useAppStore();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <>
-      <header
-        style={{
-          height: '64px',
-          background: 'white',
-          borderBottom: '1px solid #E8E3FF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 1.5rem',
-          position: 'sticky',
-          top: 0,
-          zIndex: 30,
-          boxShadow: '0 2px 8px rgba(108, 92, 231, 0.04)',
-          flexShrink: 0,
-        }}
-      >
-        {/* Search */}
-        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-          <Search
-            size={16}
-            style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#B2BEC3' }}
-          />
-          <input
-            type="search"
-            placeholder="Buscar recetas, pedidos, clientes..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-marea"
-            style={{ paddingLeft: '2.25rem', background: '#F4F3FF', border: '1.5px solid #E8E3FF' }}
-          />
+      <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm shrink-0">
+        
+        {/* Mobile Search Toggle Content */}
+        <div className={`relative flex-1 max-w-[400px] ${mobileSearchOpen ? 'flex items-center gap-2' : 'hidden md:block'}`}>
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              placeholder="Buscar recetas, pedidos, clientes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-marea pl-9 bg-gray-50 border-gray-200"
+              autoFocus={mobileSearchOpen}
+            />
+          </div>
+          {mobileSearchOpen && (
+            <button onClick={() => setMobileSearchOpen(false)} className="md:hidden p-2 text-gray-500 rounded-full hover:bg-gray-100">
+              <X size={20} />
+            </button>
+          )}
         </div>
 
         {/* Right Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className={`flex items-center gap-2 md:gap-3 ${mobileSearchOpen ? 'hidden md:flex' : ''}`}>
+          
+          {/* Mobile Search Toggle Button */}
+          <button
+            onClick={() => setMobileSearchOpen(true)}
+            className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-xl"
+            title="Buscar"
+          >
+            <Search size={20} />
+          </button>
+
           {/* Share Catalog */}
           <button
             onClick={() => setShareCatalogOpen(true)}
-            className="btn-ghost"
-            style={{ gap: '0.5rem', padding: '0.5rem 0.875rem' }}
+            className="btn-ghost hidden sm:flex items-center gap-2 px-3 py-1.5"
             title="Compartir catálogo"
           >
             <Share2 size={16} />
-            <span style={{ fontSize: '0.8rem' }}>Compartir Catálogo</span>
+            <span className="text-sm font-medium">Catálogo</span>
           </button>
 
           {/* Notifications */}
           <button
-            style={{
-              position: 'relative',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '0.5rem',
-              borderRadius: '0.5rem',
-              color: '#636E72',
-              transition: 'all 0.2s',
-            }}
+            className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
             title="Notificaciones"
           >
             <Bell size={20} />
-            <span
-              style={{
-                position: 'absolute', top: '6px', right: '6px',
-                width: '8px', height: '8px',
-                background: '#6C5CE7', borderRadius: '50%',
-                border: '2px solid white',
-              }}
-            />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border-2 border-white" />
           </button>
 
           {/* User Menu */}
-          <div style={{ position: 'relative' }}>
+          <div className="relative ml-1">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.625rem',
-                background: 'none', border: '1.5px solid #E8E3FF',
-                borderRadius: '0.75rem', padding: '0.375rem 0.75rem',
-                cursor: 'pointer', transition: 'all 0.2s',
-              }}
+              className="flex items-center gap-2.5 p-1.5 pr-3 bg-white border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors"
             >
-              <div
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'white', fontFamily: 'Poppins, sans-serif', fontWeight: 700, fontSize: '0.8rem',
-                }}
-              >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-poppins font-bold text-sm shadow-sm">
                 {user?.name.charAt(0).toUpperCase()}
               </div>
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#2D3436' }}>
+              <div className="hidden md:block text-left">
+                <div className="font-poppins font-semibold text-xs text-gray-900 leading-tight">
                   {user?.name}
                 </div>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.7rem', color: '#6C5CE7' }}>
+                <div className="font-inter text-[10px] text-primary font-medium leading-tight">
                   {roleLabels[user?.role ?? 'seller']}
                 </div>
               </div>
-              <ChevronDown size={14} style={{ color: '#636E72' }} />
+              <ChevronDown size={14} className="text-gray-400 hidden md:block" />
             </button>
 
             {userMenuOpen && (
-              <div
-                style={{
-                  position: 'absolute', top: 'calc(100% + 0.5rem)', right: 0,
-                  background: 'white', border: '1px solid #E8E3FF',
-                  borderRadius: '0.875rem', boxShadow: '0 8px 24px rgba(108, 92, 231, 0.12)',
-                  minWidth: '180px', zIndex: 100, overflow: 'hidden',
-                  animation: 'slideUp 0.2s ease',
-                }}
-              >
+              <div className="absolute top-[calc(100%+0.5rem)] right-0 bg-white border border-gray-100 rounded-2xl shadow-xl min-w-[180px] z-50 overflow-hidden animate-[slideUp_0.2s_ease]">
+                <div className="md:hidden p-4 border-b border-gray-100 bg-gray-50">
+                  <div className="font-poppins font-bold text-sm text-gray-900">{user?.name}</div>
+                  <div className="text-xs text-primary font-medium">{roleLabels[user?.role ?? 'seller']}</div>
+                </div>
                 <button
                   onClick={() => { navigate('/configuracion'); setUserMenuOpen(false); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', width: '100%', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: '#2D3436', fontFamily: 'Inter, sans-serif' }}
+                  className="flex items-center gap-2.5 w-full p-3.5 text-sm text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                 >
-                  <Settings size={16} style={{ color: '#6C5CE7' }} /> Configuración
+                  <Settings size={16} className="text-primary" /> Configuración
                 </button>
-                <hr style={{ border: 'none', borderTop: '1px solid #E8E3FF', margin: 0 }} />
+                <div className="h-px bg-gray-100 w-full" />
                 <button
                   onClick={() => { logout(); navigate('/login'); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', width: '100%', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: '#E74C3C', fontFamily: 'Inter, sans-serif' }}
+                  className="flex items-center gap-2.5 w-full p-3.5 text-sm text-red-600 font-medium hover:bg-red-50 transition-colors"
                 >
                   <LogOut size={16} /> Cerrar sesión
                 </button>

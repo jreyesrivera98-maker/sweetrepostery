@@ -26,12 +26,12 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
+      className="hidden md:flex"
       style={{
         width: sidebarCollapsed ? '72px' : '256px',
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         background: 'white',
         borderRight: '1px solid #E8E3FF',
-        display: 'flex',
         flexDirection: 'column',
         height: '100vh',
         position: 'sticky',

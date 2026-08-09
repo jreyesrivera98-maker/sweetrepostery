@@ -8,9 +8,13 @@ interface AppState {
   settings: AppSettings;
   sidebarCollapsed: boolean;
   shareCatalogOpen: boolean;
+  mobileMenuOpen: boolean;
+  mobileSearchOpen: boolean;
   updateSettings: (partial: Partial<AppSettings>) => void;
   toggleSidebar: () => void;
   setShareCatalogOpen: (open: boolean) => void;
+  setMobileMenuOpen: (open: boolean) => void;
+  setMobileSearchOpen: (open: boolean) => void;
   reorderSidebar: (items: SidebarItem[]) => void;
   toggleSidebarItem: (id: string) => void;
 }
@@ -45,11 +49,15 @@ export const useAppStore = create<AppState>()(
       },
       sidebarCollapsed: false,
       shareCatalogOpen: false,
+      mobileMenuOpen: false,
+      mobileSearchOpen: false,
       updateSettings: (partial) =>
         set((state) => ({ settings: { ...state.settings, ...partial } })),
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setShareCatalogOpen: (open) => set({ shareCatalogOpen: open }),
+      setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
+      setMobileSearchOpen: (open) => set({ mobileSearchOpen: open }),
       reorderSidebar: (items) =>
         set((state) => ({
           settings: { ...state.settings, sidebar_navigation_order: items },
