@@ -65,7 +65,7 @@ export const CatalogDesignerPage: React.FC = () => {
     <label className="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
       <div>
         <span className="block text-sm font-bold text-gray-900">{label}</span>
-        <span className="block text-xs text-gray-500">{desc}</span>
+        <span className="block text-xs text-gray-600">{desc}</span>
       </div>
       <div className={`w-12 h-6 rounded-full p-1 transition-colors ${checked ? 'bg-primary' : 'bg-gray-300'}`}>
         <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />

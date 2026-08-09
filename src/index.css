@@ -6,6 +6,8 @@
 
 @theme {
   /* Brand Colors */
+  --color-primary: #6C5CE7;
+  --color-secondary: #D6BBFB;
   --color-marea-primary: #6C5CE7;
   --color-marea-primary-dark: #4834D4;
   --color-marea-secondary: #D6BBFB;
