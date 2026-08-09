@@ -96,10 +96,22 @@ export const useAppStore = create<AppState>()(
           state.settings.catalog_max_daily_orders = persistedState.settings.catalog_max_daily_orders ?? currentState.settings.catalog_max_daily_orders;
           state.settings.catalog_whatsapp_message = persistedState.settings.catalog_whatsapp_message ?? currentState.settings.catalog_whatsapp_message;
 
+          // Deduplicate items by path to avoid duplicates if IDs changed in past updates
+          const uniquePaths = new Set();
+          const deduplicatedItems: any[] = [];
+          
+          for (const item of state.settings.sidebar_navigation_order) {
+            if (!uniquePaths.has(item.path)) {
+              uniquePaths.add(item.path);
+              deduplicatedItems.push(item);
+            }
+          }
+          state.settings.sidebar_navigation_order = deduplicatedItems;
+
           // Ensure new sidebar items from code updates are added to persisted state
-          const existingIds = new Set(state.settings.sidebar_navigation_order.map((i: any) => i.id));
+          const existingPaths = new Set(state.settings.sidebar_navigation_order.map((i: any) => i.path));
           DEFAULT_SIDEBAR_ITEMS.forEach(item => {
-            if (!existingIds.has(item.id)) {
+            if (!existingPaths.has(item.path)) {
               state.settings.sidebar_navigation_order.push(item);
             }
           });
