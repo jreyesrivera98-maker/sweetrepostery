@@ -39,7 +39,7 @@ export const RecipeFormPage: React.FC = () => {
   const handleAiGenerated = (recipe: any) => {
     setName(recipe.name || '');
     setDescription(recipe.description || '');
-    setSteps(recipe.steps ? recipe.steps.join('\n') : '');
+    setSteps(recipe.steps || '');
     if (recipe.prep_minutes) setPrepMinutes(recipe.prep_minutes.toString());
     if (recipe.yield_portions) setYieldPortions(recipe.yield_portions.toString());
     

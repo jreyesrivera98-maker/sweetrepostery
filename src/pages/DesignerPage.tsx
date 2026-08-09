@@ -50,9 +50,9 @@ export const DesignerPage: React.FC = () => {
       
       const newImage = await generateImageWithGemini(prompt);
       setGeneratedImage(newImage);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Error al generar la imagen. Verifica tu conexión o clave de API.');
+      toast.error(error.message || 'Error al generar la imagen. Verifica tu conexión o clave de API.');
     } finally {
       setIsGenerating(false);
     }
