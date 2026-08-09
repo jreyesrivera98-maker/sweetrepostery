@@ -18,7 +18,7 @@ export const DesignerPage: React.FC = () => {
   const styles = ['Minimalista', 'Romántico', 'Boho', 'Elegante', 'Infantil', 'Moderno'];
   const occasions = ['Cumpleaños', 'Boda', 'Baby Shower', 'Graduación', 'Corporativo', 'San Valentín'];
 
-  const downloadImage = async (url: string, index: number) => {
+  const downloadImage = async (url: string) => {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
@@ -174,7 +174,7 @@ export const DesignerPage: React.FC = () => {
                       Ver en tamaño completo
                     </button>
                     <button
-                      onClick={() => downloadImage(generatedImage, 0)}
+                      onClick={() => downloadImage(generatedImage)}
                       className="px-6 py-2 bg-white/20 text-white rounded-lg text-sm font-medium hover:bg-white/30 transition-colors backdrop-blur-sm flex justify-center items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
