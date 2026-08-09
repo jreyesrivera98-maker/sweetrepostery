@@ -8,6 +8,15 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api/generate-image': {
+        target: 'https://free-image-generation-api.jreyesrivera98.workers.dev/',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/generate-image/, '')
+      }
+    }
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

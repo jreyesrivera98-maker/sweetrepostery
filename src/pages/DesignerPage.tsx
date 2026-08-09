@@ -51,7 +51,7 @@ export const DesignerPage: React.FC = () => {
       
       setPromptUsed(prompt);
       
-      const response = await fetch('https://free-image-generation-api.jreyesrivera98.workers.dev/', {
+      const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
